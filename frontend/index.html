@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bluestock IQ | Nifty 100 Financial Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <div class="brand-lockup">
+        <div class="brand-geometry" aria-hidden="true">
+          <span class="shape-circle"></span>
+          <span class="shape-square"></span>
+          <span class="shape-triangle"></span>
+        </div>
+        <div class="brand-copy">
+          <p class="eyebrow">Nifty 100 Intelligence System</p>
+          <h1>Bluestock IQ</h1>
+        </div>
+      </div>
+      <div class="top-actions">
+        <a class="ghost-button" href="#workspace">Open Dashboard Floor</a>
+        <a class="solid-button" href="#api-zone">View API Surface</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero-band">
+        <div class="hero-copy poster-card">
+          <p class="section-tag">Constructed for fund managers, analysts, and operators</p>
+          <h2>Read 100 companies like a portfolio manager.</h2>
+          <p class="hero-text">
+            Bluestock IQ turns the Nifty 100 into a geometric command center for growth, margin,
+            leverage, cash flow, and shareholder return analysis. The interface is built to feel
+            like an animated Bauhaus poster: direct, bold, and impossible to skim past.
+          </p>
+          <div class="hero-actions">
+            <button class="solid-button" type="button" data-jump="dashboard-grid">See All Seven Dashboards</button>
+            <button class="yellow-button" type="button" data-jump="company-story">Jump To Company View</button>
+          </div>
+          <div class="hero-markers">
+            <span>EXECUTIVE SNAPSHOT</span>
+            <span>COMPANY DEEP DIVE</span>
+            <span>RISK + RETURNS</span>
+          </div>
+        </div>
+
+        <aside class="hero-panel">
+          <div class="panel-header">
+            <span>Market pulse</span>
+            <span>Live screen</span>
+          </div>
+          <div class="hero-score">
+            <p>Average Health Score</p>
+            <strong id="hero-score">78</strong>
+            <span id="hero-score-label">GOOD</span>
+          </div>
+          <div class="hero-composition" aria-hidden="true">
+            <div class="composition-circle"></div>
+            <div class="composition-diamond"></div>
+            <div class="composition-square">
+              <div class="composition-inner-triangle"></div>
+            </div>
+          </div>
+          <div class="hero-stat-grid" id="hero-stat-grid"></div>
+        </aside>
+      </section>
+
+      <section class="dashboard-strip" id="dashboard-grid">
+        <div class="strip-header">
+          <div>
+            <p class="section-tag">Seven Dashboard Routes</p>
+            <h3>One visual system for market overview, deep dives, sectors, risk, growth, debt, and dividends</h3>
+          </div>
+          <p class="strip-note">
+            These tiles map to the Power BI suite and also define the future information architecture
+            for the Django application.
+          </p>
+        </div>
+        <div class="dashboard-grid" id="dashboard-grid-cards"></div>
+      </section>
+
+      <section class="workspace" id="workspace">
+        <aside class="workspace-sidebar">
+          <div class="sidebar-card sidebar-card-primary">
+            <p class="section-tag">Control Tower</p>
+            <h3>Switch the active dashboard</h3>
+            <div class="dashboard-tabs" id="dashboard-tabs"></div>
+          </div>
+
+          <div class="sidebar-card sidebar-card-neutral">
+            <h3>Filter the universe</h3>
+            <label for="sector-select">Sector</label>
+            <select id="sector-select"></select>
+
+            <label for="company-select">Company</label>
+            <select id="company-select"></select>
+
+            <label for="year-select">Anchor Year</label>
+            <select id="year-select"></select>
+          </div>
+
+          <div class="sidebar-card sidebar-card-secondary">
+            <p class="section-tag">Architecture Note</p>
+            <p id="dashboard-rationale">
+              The frontend is designed as a narrative layer above your warehouse and Power BI outputs.
+            </p>
+          </div>
+        </aside>
+
+        <section class="workspace-stage">
+          <div class="stage-header">
+            <div>
+              <p class="section-tag">Interactive Preview</p>
+              <h3 id="active-dashboard-title">Executive Market Overview</h3>
+            </div>
+            <span class="status-pill" id="active-dashboard-audience">Fund managers, CXOs</span>
+          </div>
+
+          <div class="metric-grid" id="metric-grid"></div>
+
+          <div class="chart-grid">
+            <article class="chart-card chart-card-large">
+              <div class="chart-card-header">
+                <div>
+                  <p class="chart-eyebrow">Primary insight</p>
+                  <h4 id="primary-chart-title">Market composition</h4>
+                </div>
+                <span id="primary-chart-tag">Cross-sector view</span>
+              </div>
+              <div class="chart-stage">
+                <svg id="primary-chart" viewBox="0 0 620 260" aria-hidden="true"></svg>
+              </div>
+            </article>
+
+            <article class="chart-card chart-card-contrast">
+              <div class="chart-card-header">
+                <div>
+                  <p class="chart-eyebrow">Secondary signal</p>
+                  <h4 id="secondary-chart-title">Top performers</h4>
+                </div>
+              </div>
+              <div class="chart-stage compact-stage">
+                <svg id="secondary-chart" viewBox="0 0 320 260" aria-hidden="true"></svg>
+              </div>
+            </article>
+          </div>
+
+          <article class="table-card" id="company-story">
+            <div class="chart-card-header">
+              <div>
+                <p class="chart-eyebrow">Company intelligence</p>
+                <h4 id="table-title">Selected company summary</h4>
+              </div>
+              <span id="table-tag">Deep-dive snapshot</span>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead id="insight-table-head"></thead>
+                <tbody id="insight-table-body"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+      </section>
+
+      <section class="feature-band">
+        <article class="feature-card feature-red">
+          <p class="section-tag">For analysts</p>
+          <h3>Compare without losing the underlying company story</h3>
+          <p>
+            Switch from sector rankings to a single issuer and keep the same filters, metrics,
+            and visual language intact.
+          </p>
+        </article>
+        <article class="feature-card feature-blue">
+          <p class="section-tag">For executives</p>
+          <h3>See what changed in seconds</h3>
+          <p>
+            The composition emphasizes distribution, acceleration, and outliers before it ever
+            asks a user to read a dense table.
+          </p>
+        </article>
+        <article class="feature-card feature-yellow" id="api-zone">
+          <p class="section-tag">For partners</p>
+          <h3>Designed to sit on top of a real API and warehouse</h3>
+          <p>
+            The layout mirrors future endpoints such as company snapshots, sector summaries,
+            health score detail, and multi-year fact tables.
+          </p>
+        </article>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>BLUESTOCK IQ</p>
+      <p>NIFTY 100 FINANCIAL INTELLIGENCE SYSTEM</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
