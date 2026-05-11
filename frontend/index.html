@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bluestock IQ | Nifty 100 Financial Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <div class="brand-lockup">
+        <div class="brand-geometry" aria-hidden="true">
+          <span class="shape-circle"></span>
+          <span class="shape-square"></span>
+          <span class="shape-triangle"></span>
+        </div>
+        <div class="brand-copy">
+          <p class="eyebrow">Nifty 100 Intelligence System</p>
+          <h1>Bluestock IQ</h1>
+        </div>
+      </div>
+      <nav class="route-nav" aria-label="Primary dashboard routes">
+        <a class="route-link" data-route-link="home" href="/">Home</a>
+        <a class="route-link" data-route-link="companies" href="/companies/">Companies</a>
+        <a class="route-link" data-route-link="dashboards" href="/dashboards/">Dashboards</a>
+        <a class="route-link" data-route-link="reports" href="/reports/">Reports</a>
+        <a class="route-link" data-route-link="about" href="/about/">About</a>
+      </nav>
+      <div class="top-actions">
+        <span class="source-pill" id="source-pill">Connecting to warehouse</span>
+        <a class="ghost-button" href="/companies/">Start Exploring</a>
+        <a class="solid-button" href="/about/">How We Score</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-section page-home" id="page-home" data-page="home">
+        <section class="hero-band">
+          <div class="hero-copy poster-card">
+            <p class="section-tag">Built for retail investors and first-time researchers</p>
+            <h2>Understand big Indian companies without reading 20 reports first.</h2>
+            <p class="hero-text">
+              Bluestock IQ helps you compare Nifty 100 companies in simple, guided steps. Start with
+              trusted company basics, move into dashboards when you are ready, and open reports only
+              when you want the source material.
+            </p>
+            <div class="hero-actions">
+              <a class="solid-button" href="/companies/">Explore Companies</a>
+              <a class="yellow-button" href="/dashboards/">Browse Dashboards</a>
+            </div>
+            <div class="hero-markers">
+              <span>BEGINNER FRIENDLY</span>
+              <span>WAREHOUSE BACKED</span>
+              <span>ANNUAL REPORT LINKS</span>
+            </div>
+          </div>
+
+          <aside class="hero-panel">
+            <div class="panel-header">
+              <span>Market pulse</span>
+              <span>Live view</span>
+            </div>
+            <div class="hero-score">
+              <p>Average Health Score</p>
+              <strong id="hero-score">78</strong>
+              <span id="hero-score-label">GOOD</span>
+            </div>
+            <svg id="hero-sparkline" class="hero-sparkline" viewBox="0 0 280 72" aria-label="Aggregated revenue trend"></svg>
+            <div class="hero-composition" aria-hidden="true">
+              <div class="composition-circle"></div>
+              <div class="composition-diamond"></div>
+              <div class="composition-square">
+                <div class="composition-inner-triangle"></div>
+              </div>
+            </div>
+            <div class="hero-stat-grid" id="hero-stat-grid"></div>
+          </aside>
+        </section>
+
+        <section class="home-trust-strip" id="home-trust-strip"></section>
+
+        <section class="page-band page-band-grid">
+          <article class="story-card story-card-wide">
+            <p class="section-tag">How To Use Bluestock IQ</p>
+            <h3>Start simple, then go deeper only when you need to</h3>
+            <p>
+              Browse companies, compare sectors, and learn the basics first. When you want more detail,
+              open a company page, check the dashboard library, or go to reports for the actual filings.
+            </p>
+          </article>
+          <article class="story-card story-card-red">
+            <p class="section-tag">Step 1</p>
+            <h3>Find a company</h3>
+            <p>Use the Companies page to search by name, sector, growth, or financial health.</p>
+          </article>
+          <article class="story-card story-card-blue">
+            <p class="section-tag">Step 2</p>
+            <h3>See the big picture</h3>
+            <p>Use dashboards to understand debt, growth, profitability, and dividend patterns.</p>
+          </article>
+          <article class="story-card story-card-yellow">
+            <p class="section-tag">Step 3</p>
+            <h3>Open the source</h3>
+            <p>Go to Reports when you want annual-report links and supporting company documents.</p>
+          </article>
+        </section>
+
+        <section class="page-band">
+          <div class="strip-header">
+            <div>
+              <p class="section-tag">Tracked Universe</p>
+              <h3>Companies you will see across the platform</h3>
+            </div>
+            <p class="strip-note">A quick moving cloud of the Nifty 100 names inside the current warehouse.</p>
+          </div>
+          <div class="company-cloud" id="home-company-cloud"></div>
+        </section>
+
+        <section class="page-band">
+          <div class="strip-header">
+            <div>
+              <p class="section-tag">Featured Paths</p>
+              <h3>Choose the easiest starting point for your question</h3>
+            </div>
+          </div>
+          <div class="home-path-grid" id="home-path-grid"></div>
+        </section>
+      </section>
+
+      <section class="page-section page-companies" id="page-companies" data-page="companies">
+        <section class="page-hero page-hero-light">
+          <div>
+            <p class="section-tag">Companies</p>
+            <h2>Browse companies in a way that feels clear, not technical</h2>
+            <p class="hero-text">
+              Search by company, narrow by sector, and open a clean detail page when one business catches your attention.
+            </p>
+          </div>
+          <div class="page-hero-actions">
+            <a class="solid-button" href="/reports/">Open Reports</a>
+          </div>
+        </section>
+
+        <section class="page-band compact-band">
+          <div class="filter-grid">
+            <div class="filter-field">
+              <label for="sector-select">Sector</label>
+              <select id="sector-select"></select>
+            </div>
+            <div class="filter-field">
+              <label for="company-search">Search Company</label>
+              <input id="company-search" type="search" placeholder="Type company name or symbol">
+            </div>
+            <div class="filter-field filter-field-button">
+              <a class="detail-link-button" id="company-detail-link" href="/companies/TCS/">Open Company Detail Page</a>
+            </div>
+          </div>
+          <div class="sector-chip-bar" id="sector-chip-bar"></div>
+        </section>
+
+        <section class="page-band">
+          <div class="strip-header">
+            <div>
+              <p class="section-tag">Company Cloud</p>
+              <h3>Explore the market visually</h3>
+            </div>
+            <p class="strip-note">Each floating company chip opens a focused company page.</p>
+          </div>
+          <div class="company-cloud company-cloud-large" id="company-cloud"></div>
+        </section>
+
+        <section class="page-band">
+          <div class="strip-header">
+            <div>
+              <p class="section-tag">Quick Browse</p>
+              <h3>Shortlist companies before opening the detail page</h3>
+            </div>
+          </div>
+          <div class="company-card-grid" id="company-card-grid"></div>
+        </section>
+
+        <section class="explorer-band" id="company-explorer">
+          <div class="strip-header">
+            <div>
+              <p class="section-tag">Company Table</p>
+              <h3>Search, sort, and export the current list</h3>
+            </div>
+            <p class="strip-note">A simpler table view for users who prefer scanning rows.</p>
+          </div>
+          <div class="explorer-toolbar">
+            <div class="explorer-kpis" id="explorer-kpis"></div>
+            <div class="explorer-actions">
+              <button class="ghost-button export-button" id="export-explorer-csv" type="button">Download CSV</button>
+              <button class="solid-button export-button" id="export-explorer-json" type="button">Download JSON</button>
+            </div>
+          </div>
+          <div class="table-scroll table-scroll-explorer">
+            <table>
+              <thead id="explorer-table-head"></thead>
+              <tbody id="explorer-table-body"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section class="page-section page-dashboards" id="page-dashboards" data-page="dashboards">
+        <section class="page-hero page-hero-yellow">
+          <div>
+            <p class="section-tag">Dashboards</p>
+            <h2>Seven guided views for investors who want different kinds of answers</h2>
+            <p class="hero-text">
+              These dashboard pages are grouped by the type of question you are asking: growth, debt, dividends,
+              health, or sector comparison.
+            </p>
+          </div>
+        </section>
+
+        <section class="dashboard-strip page-band">
+          <div class="strip-header">
+            <div>
+              <p class="section-tag">Dashboard Directory</p>
+              <h3>Pick the lens that matches your investing question</h3>
+            </div>
+            <p class="strip-note">Each card opens a cleaner dashboard detail page instead of one giant all-in-one screen.</p>
+          </div>
+          <div class="dashboard-grid" id="dashboard-grid-cards"></div>
+        </section>
+      </section>
+
+      <section class="page-section page-dashboard-detail" id="page-dashboard-detail" data-page="dashboard-detail">
+        <section class="page-hero page-hero-blue">
+          <div>
+            <p class="section-tag">Dashboard Detail</p>
+            <h2 id="active-dashboard-title">Executive Market Overview</h2>
+            <p class="hero-text" id="dashboard-rationale">
+              The frontend is designed as a narrative layer above your warehouse and Power BI outputs.
+            </p>
+          </div>
+          <div class="page-hero-actions">
+            <span class="status-pill" id="active-dashboard-audience">Fund managers, CXOs</span>
+          </div>
+        </section>
+
+        <section class="page-band compact-band">
+          <article class="route-spotlight">
+            <div>
+              <p class="section-tag">Current Page</p>
+              <h3 id="route-spotlight-title">Executive Market Overview</h3>
+            </div>
+            <p id="route-spotlight-copy">
+              Route-aware copy will explain what the active dashboard is built to answer.
+            </p>
+            <div class="route-spotlight-meta" id="route-spotlight-meta"></div>
+          </article>
+          <div class="filter-grid">
+            <div class="filter-field">
+              <label for="dashboard-sector-select">Sector</label>
+              <select id="dashboard-sector-select"></select>
+            </div>
+            <div class="filter-field">
+              <label for="dashboard-company-select">Company</label>
+              <select id="dashboard-company-select"></select>
+            </div>
+            <div class="filter-field">
+              <label for="year-select">Anchor Year</label>
+              <select id="year-select"></select>
+            </div>
+          </div>
+        </section>
+
+        <section class="workspace-stage page-band">
+          <div class="metric-grid" id="metric-grid"></div>
+
+          <div class="chart-grid">
+            <article class="chart-card chart-card-large">
+              <div class="chart-card-header">
+                <div>
+                  <p class="chart-eyebrow">Primary insight</p>
+                  <h4 id="primary-chart-title">Market composition</h4>
+                </div>
+                <span id="primary-chart-tag">Cross-sector view</span>
+              </div>
+              <div class="chart-stage">
+                <svg id="primary-chart" viewBox="0 0 620 260" aria-hidden="true"></svg>
+              </div>
+            </article>
+
+            <article class="chart-card chart-card-contrast">
+              <div class="chart-card-header">
+                <div>
+                  <p class="chart-eyebrow">Secondary signal</p>
+                  <h4 id="secondary-chart-title">Top performers</h4>
+                </div>
+              </div>
+              <div class="chart-stage compact-stage">
+                <svg id="secondary-chart" viewBox="0 0 320 260" aria-hidden="true"></svg>
+              </div>
+            </article>
+          </div>
+
+          <article class="table-card">
+            <div class="chart-card-header">
+              <div>
+                <p class="chart-eyebrow">Summary table</p>
+                <h4 id="table-title">Selected company summary</h4>
+              </div>
+              <div class="table-header-actions">
+                <span id="table-tag">Deep-dive snapshot</span>
+                <button class="ghost-button export-button" id="export-current-table" type="button">Export View CSV</button>
+              </div>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead id="insight-table-head"></thead>
+                <tbody id="insight-table-body"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+      </section>
+
+      <section class="page-section page-company-detail" id="page-company-detail" data-page="company-detail">
+        <section class="page-hero page-hero-light">
+          <div>
+            <p class="section-tag">Company Detail</p>
+            <h2 id="selected-company-name">Company</h2>
+            <p class="hero-text" id="selected-company-meta">Sector and latest financial context</p>
+          </div>
+          <div class="score-lockup">
+            <strong id="selected-health-score">0</strong>
+            <span id="selected-health-label">AVERAGE</span>
+          </div>
+        </section>
+
+        <section class="page-band compact-band">
+          <div class="filter-grid">
+            <div class="filter-field">
+              <label for="company-select">Choose Company</label>
+              <select id="company-select"></select>
+            </div>
+            <div class="filter-field filter-field-button">
+              <a class="solid-button" href="/reports/">Open Reports Library</a>
+            </div>
+          </div>
+          <div class="metric-grid" id="company-metric-grid"></div>
+        </section>
+
+        <section class="page-band">
+          <div class="chart-grid">
+            <article class="chart-card chart-card-large">
+              <div class="chart-card-header">
+                <div>
+                  <p class="chart-eyebrow">Business trend</p>
+                  <h4 id="company-primary-chart-title">Revenue vs net profit</h4>
+                </div>
+                <span id="company-primary-chart-tag">Last reported years</span>
+              </div>
+              <div class="chart-stage">
+                <svg id="company-primary-chart" viewBox="0 0 620 260" aria-hidden="true"></svg>
+              </div>
+            </article>
+
+            <article class="chart-card">
+              <div class="chart-card-header">
+                <div>
+                  <p class="chart-eyebrow">Snapshot</p>
+                  <h4 id="company-secondary-chart-title">Profitability and payout</h4>
+                </div>
+              </div>
+              <div class="chart-stage compact-stage">
+                <svg id="company-secondary-chart" viewBox="0 0 320 260" aria-hidden="true"></svg>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page-band">
+          <div class="company-intel-grid" aria-label="Selected company intelligence">
+            <article class="intel-card intel-card-docs">
+              <div class="chart-card-header">
+                <div>
+                  <p class="chart-eyebrow">Annual reports</p>
+                  <h4 id="documents-title">Documents</h4>
+                </div>
+                <span id="documents-count">0 links</span>
+              </div>
+              <div class="document-list" id="document-list"></div>
+            </article>
+
+            <article class="profile-card profile-card-summary">
+              <div class="profile-summary-top">
+                <img id="company-logo" class="company-logo" alt="" hidden>
+                <div>
+                  <p class="chart-eyebrow">Issuer profile</p>
+                  <h4 id="profile-company-name">Company</h4>
+                  <p class="profile-sector" id="profile-sector">Sector</p>
+                </div>
+              </div>
+              <p class="profile-description" id="company-description">Company summary will appear here.</p>
+              <div class="profile-links" id="company-links"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page-band">
+          <div class="company-profile-grid" aria-label="Company profile">
+            <article class="profile-card profile-card-pros">
+              <p class="chart-eyebrow">Strengths</p>
+              <h4>Pros</h4>
+              <ul class="insight-list" id="pros-list"></ul>
+            </article>
+
+            <article class="profile-card profile-card-cons">
+              <p class="chart-eyebrow">Watchpoints</p>
+              <h4>Cons</h4>
+              <ul class="insight-list" id="cons-list"></ul>
+            </article>
+
+            <article class="table-card">
+              <div class="chart-card-header">
+                <div>
+                  <p class="chart-eyebrow">Financial history</p>
+                  <h4>Yearly summary</h4>
+                </div>
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <thead id="company-insight-table-head"></thead>
+                  <tbody id="company-insight-table-body"></tbody>
+                </table>
+              </div>
+            </article>
+          </div>
+        </section>
+      </section>
+
+      <section class="page-section page-reports" id="page-reports" data-page="reports">
+        <section class="page-hero page-hero-yellow">
+          <div>
+            <p class="section-tag">Reports</p>
+            <h2>Annual reports in one place</h2>
+            <p class="hero-text">
+              When you want the original filing, this page gives you a cleaner report library instead of hiding links inside a large dashboard.
+            </p>
+          </div>
+        </section>
+
+        <section class="page-band compact-band">
+          <div class="filter-grid">
+            <div class="filter-field">
+              <label for="reports-company-select">Company</label>
+              <select id="reports-company-select"></select>
+            </div>
+            <div class="filter-field">
+              <label for="reports-year-select">Year</label>
+              <select id="reports-year-select"></select>
+            </div>
+          </div>
+        </section>
+
+        <section class="page-band">
+          <div class="reports-grid" id="report-grid"></div>
+          <p class="reports-empty" id="reports-empty" hidden>No reports found for this filter.</p>
+        </section>
+      </section>
+
+      <section class="page-section page-about" id="page-about" data-page="about">
+        <section class="page-hero page-hero-blue">
+          <div>
+            <p class="section-tag">About Bluestock IQ</p>
+            <h2>Why this platform should feel trustworthy to a beginner</h2>
+            <p class="hero-text">
+              We organize company facts, multi-year financial data, health scoring, and report links into one place so investors can build context before making a decision.
+            </p>
+          </div>
+        </section>
+
+        <section class="page-band page-band-grid">
+          <article class="story-card story-card-wide">
+            <p class="section-tag">Data Source</p>
+            <h3>Warehouse-backed and company-linked</h3>
+            <p>
+              The site reads from a PostgreSQL warehouse built from structured financial exports and company-linked annual report references.
+            </p>
+          </article>
+          <article class="story-card story-card-red">
+            <p class="section-tag">Health Score</p>
+            <h3>Six-factor view</h3>
+            <p>Scores combine profitability, growth, leverage, cash flow, dividend behavior, and trend signals.</p>
+          </article>
+          <article class="story-card story-card-blue">
+            <p class="section-tag">Coverage</p>
+            <h3>Nifty 100 focused</h3>
+            <p>The platform is designed around India’s top listed companies so comparisons stay relevant and familiar.</p>
+          </article>
+          <article class="story-card story-card-yellow">
+            <p class="section-tag">Use With Care</p>
+            <h3>Research support, not a promise</h3>
+            <p>This is a research platform, not investment advice. Always read company filings before taking action.</p>
+          </article>
+        </section>
+
+        <section class="page-band">
+          <div class="strip-header">
+            <div>
+              <p class="section-tag">What We Measure</p>
+              <h3>Simple categories behind the score</h3>
+            </div>
+          </div>
+          <div class="home-path-grid" id="about-score-grid"></div>
+        </section>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>BLUESTOCK IQ</p>
+      <p>NIFTY 100 FINANCIAL INTELLIGENCE SYSTEM</p>
+    </footer>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
