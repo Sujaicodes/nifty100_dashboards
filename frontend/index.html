@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <div class="page-shell">
@@ -38,7 +39,7 @@
     </header>
 
     <main>
-      <section class="page-section page-home" id="page-home" data-page="home">
+      <section class="page-section page-home active" id="page-home" data-page="home">
         <section class="hero-band">
           <div class="hero-copy poster-card">
             <p class="section-tag">Built for retail investors and first-time researchers</p>
@@ -69,7 +70,9 @@
               <strong id="hero-score">78</strong>
               <span id="hero-score-label">GOOD</span>
             </div>
-            <svg id="hero-sparkline" class="hero-sparkline" viewBox="0 0 280 72" aria-label="Aggregated revenue trend"></svg>
+            <div class="chart-canvas-shell sparkline-shell">
+              <canvas id="hero-sparkline" class="hero-sparkline" aria-label="Aggregated revenue trend"></canvas>
+            </div>
             <div class="hero-composition" aria-hidden="true">
               <div class="composition-circle"></div>
               <div class="composition-diamond"></div>
@@ -181,6 +184,7 @@
             </div>
           </div>
           <div class="company-card-grid" id="company-card-grid"></div>
+          <div class="pagination-bar" id="company-card-pagination"></div>
         </section>
 
         <section class="explorer-band" id="company-explorer">
@@ -246,6 +250,7 @@
         </section>
 
         <section class="page-band compact-band">
+          <div class="page-status" id="dashboard-status"></div>
           <article class="route-spotlight">
             <div>
               <p class="section-tag">Current Page</p>
@@ -285,7 +290,9 @@
                 <span id="primary-chart-tag">Cross-sector view</span>
               </div>
               <div class="chart-stage">
-                <svg id="primary-chart" viewBox="0 0 620 260" aria-hidden="true"></svg>
+                <div class="chart-canvas-shell">
+                  <canvas id="primary-chart" aria-hidden="true"></canvas>
+                </div>
               </div>
             </article>
 
@@ -297,10 +304,14 @@
                 </div>
               </div>
               <div class="chart-stage compact-stage">
-                <svg id="secondary-chart" viewBox="0 0 320 260" aria-hidden="true"></svg>
+                <div class="chart-canvas-shell">
+                  <canvas id="secondary-chart" aria-hidden="true"></canvas>
+                </div>
               </div>
             </article>
           </div>
+
+          <div class="dashboard-guide-grid" id="dashboard-guide-grid"></div>
 
           <article class="table-card">
             <div class="chart-card-header">
@@ -337,6 +348,7 @@
         </section>
 
         <section class="page-band compact-band">
+          <div class="page-status" id="company-detail-status"></div>
           <div class="filter-grid">
             <div class="filter-field">
               <label for="company-select">Choose Company</label>
@@ -360,7 +372,9 @@
                 <span id="company-primary-chart-tag">Last reported years</span>
               </div>
               <div class="chart-stage">
-                <svg id="company-primary-chart" viewBox="0 0 620 260" aria-hidden="true"></svg>
+                <div class="chart-canvas-shell">
+                  <canvas id="company-primary-chart" aria-hidden="true"></canvas>
+                </div>
               </div>
             </article>
 
@@ -372,8 +386,30 @@
                 </div>
               </div>
               <div class="chart-stage compact-stage">
-                <svg id="company-secondary-chart" viewBox="0 0 320 260" aria-hidden="true"></svg>
+                <div class="chart-canvas-shell">
+                  <canvas id="company-secondary-chart" aria-hidden="true"></canvas>
+                </div>
               </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page-band">
+          <div class="detail-grid detail-grid-triple">
+            <article class="detail-card">
+              <p class="chart-eyebrow">YoY Growth</p>
+              <h4>Latest yearly change</h4>
+              <div class="micro-stat-grid" id="yoy-growth-grid"></div>
+            </article>
+            <article class="detail-card">
+              <p class="chart-eyebrow">CAGR Summary</p>
+              <h4>Compounding view</h4>
+              <div class="micro-stat-grid" id="cagr-grid"></div>
+            </article>
+            <article class="detail-card">
+              <p class="chart-eyebrow">Sector Comparison</p>
+              <h4>Vs sector average</h4>
+              <div class="micro-stat-grid" id="sector-average-grid"></div>
             </article>
           </div>
         </section>
@@ -402,6 +438,40 @@
               </div>
               <p class="profile-description" id="company-description">Company summary will appear here.</p>
               <div class="profile-links" id="company-links"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page-band">
+          <div class="detail-grid detail-grid-double">
+            <article class="detail-card">
+              <p class="chart-eyebrow">Health score breakdown</p>
+              <h4>Why the score looks this way</h4>
+              <div class="score-breakdown-list" id="score-breakdown-list"></div>
+            </article>
+            <article class="detail-card">
+              <p class="chart-eyebrow">Peer comparison</p>
+              <h4>Best and weakest peers</h4>
+              <div class="peer-comparison-grid" id="peer-comparison-grid"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page-band">
+          <div class="detail-grid detail-grid-double">
+            <article class="detail-card">
+              <p class="chart-eyebrow">What these numbers mean</p>
+              <h4>Beginner guidance</h4>
+              <div class="beginner-guide-grid" id="beginner-guide-grid"></div>
+            </article>
+            <article class="detail-card">
+              <p class="chart-eyebrow">Growth trend</p>
+              <h4>Revenue, profit, and EPS trajectory</h4>
+              <div class="chart-stage compact-stage">
+                <div class="chart-canvas-shell">
+                  <canvas id="growth-trend-chart" aria-hidden="true"></canvas>
+                </div>
+              </div>
             </article>
           </div>
         </section>

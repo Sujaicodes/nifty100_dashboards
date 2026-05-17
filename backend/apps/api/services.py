@@ -193,7 +193,7 @@ def balance_sheet_trend(symbol: str) -> dict | None:
                 "debt_to_equity": _to_float(fact.debt_to_equity),
                 "equity_ratio": _to_float(fact.equity_ratio),
             }
-            for fact in BalanceSheetFact.objects.filter(symbol=company).select_related("year").order_by("year__sort_order")
+            for fact in BalanceSheetFact.objects.filter(symbol=company).select_related("year").order_by("-year__sort_order")
         ]
         return {"symbol": company.symbol, "company_name": company.company_name, "rows": rows}
     return None

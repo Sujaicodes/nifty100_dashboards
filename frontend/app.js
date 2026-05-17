@@ -337,14 +337,18 @@ const state = {
   searchTerm: "",
   explorerSortKey: "healthScore",
   explorerSortDirection: "desc",
+  companyCardPage: 1,
+  companyCardPageSize: 9,
   reportsCompany: "All",
   reportsYear: "All"
 };
 
 let lastRenderedTable = null;
+const chartRegistry = new Map();
 
 async function init() {
   applyRouteState();
+  setSourceState("loading", "Loading warehouse data");
   companies = await loadCompanies();
   state.companySymbol = companies.some((item) => item.symbol === state.companySymbol) ? state.companySymbol : companies[0]?.symbol;
   state.year = latestAvailableYear();
@@ -411,7 +415,7 @@ async function loadCompanies() {
   }
 
   setSourceState("offline", "Demo fallback data");
-  return companies;
+  return companies.map(normalizeCompany);
 }
 
 function populateControls() {
@@ -422,7 +426,7 @@ function populateControls() {
   const companySelect = document.getElementById("company-select");
   const reportsCompanySelect = document.getElementById("reports-company-select");
   const reportsYearSelect = document.getElementById("reports-year-select");
-  const years = unique(companies.flatMap((item) => item.years.map((entry) => entry.year))).sort((a, b) => b - a);
+  const years = unique(companies.flatMap((item) => fiscalRows(item).map((entry) => entry.year))).sort((a, b) => b - a);
   const sectors = ["All", ...unique(companies.map((item) => item.sector))];
 
   fillSelect(sectorSelect, sectors, state.sector);
@@ -454,6 +458,7 @@ function renderDashboardCards() {
 function bindEvents() {
   document.getElementById("sector-select").addEventListener("change", (event) => {
     state.sector = event.target.value;
+    state.companyCardPage = 1;
     render();
   });
 
@@ -464,6 +469,7 @@ function bindEvents() {
 
   document.getElementById("company-search").addEventListener("input", (event) => {
     state.searchTerm = event.target.value;
+    state.companyCardPage = 1;
     render();
   });
 
@@ -538,6 +544,7 @@ function bindEvents() {
       return;
     }
     state.sector = chip.dataset.sectorChip;
+    state.companyCardPage = 1;
     render();
   });
 
@@ -563,6 +570,24 @@ function bindEvents() {
       return;
     }
     navigateTo(`/companies/${encodeURIComponent(button.dataset.companySymbol)}/`);
+  });
+
+  document.getElementById("peer-comparison-grid").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-company-symbol]");
+    if (!button) {
+      return;
+    }
+    navigateTo(`/companies/${encodeURIComponent(button.dataset.companySymbol)}/`);
+  });
+
+  document.getElementById("company-card-pagination").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-card-page]");
+    if (!button) {
+      return;
+    }
+    state.companyCardPage = Number(button.dataset.cardPage);
+    render();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
   document.getElementById("export-current-table").addEventListener("click", () => {
@@ -603,6 +628,7 @@ function bindEvents() {
 
 function selectSector(sector) {
   state.sector = sector;
+  state.companyCardPage = 1;
   render();
 }
 
@@ -611,14 +637,14 @@ function render() {
   const filtered = filteredCompanies();
   const safeFiltered = filtered.length ? filtered : companies;
   const company = companies.find((item) => item.symbol === state.companySymbol) || safeFiltered[0] || companies[0];
-  const context = { dashboard, company, filtered: safeFiltered, year: state.year };
+  const context = { dashboard, company, filtered: safeFiltered, rawFiltered: filtered, year: state.year };
 
   setActivePage();
   syncControls();
   renderRouteLinks();
   renderDashboardCards();
   renderHome(companies);
-  renderCompaniesPage(safeFiltered, company);
+  renderCompaniesPage(filtered, company);
   renderDashboardDetail(context);
   renderCompanyDetail(company);
   renderReportsPage();
@@ -664,16 +690,23 @@ function renderCompaniesPage(data, company) {
 }
 
 function renderDashboardDetail(context) {
-  const { dashboard, company, filtered } = context;
+  const { dashboard, company, filtered, rawFiltered } = context;
   document.getElementById("active-dashboard-title").textContent = dashboard.title;
   document.getElementById("active-dashboard-audience").textContent = dashboard.audience;
   document.getElementById("dashboard-rationale").textContent = dashboard.rationale;
   renderRouteSpotlight(dashboard, company, filtered);
+  renderDashboardGuide(dashboard, company, filtered);
   document.getElementById("primary-chart-title").textContent = dashboard.primaryTitle;
   document.getElementById("primary-chart-tag").textContent = dashboard.primaryTag;
   document.getElementById("secondary-chart-title").textContent = dashboard.secondaryTitle;
   document.getElementById("table-title").textContent = dashboard.tableTitle;
   document.getElementById("table-tag").textContent = dashboard.tableTag;
+
+  if (!rawFiltered.length) {
+    setStatus("dashboard-status", "error", "No companies match this filter yet, so this dashboard is temporarily showing the full tracked universe.");
+  } else {
+    clearStatus("dashboard-status");
+  }
 
   renderMetricsInto("metric-grid", dashboard.metrics(context));
   drawChart(document.getElementById("primary-chart"), dashboard.primaryChart(context));
@@ -694,6 +727,55 @@ function renderRouteSpotlight(dashboard, company, filtered) {
   ].join("");
 }
 
+function renderDashboardGuide(dashboard, company, filtered) {
+  const container = document.getElementById("dashboard-guide-grid");
+  const sectorName = state.sector === "All" ? "all sectors" : state.sector;
+  const guides = {
+    executive: [
+      ["Start Here", "Use this view to see market breadth before picking a company."],
+      ["Best Signal", "Average score and sector revenue show where quality is concentrated."],
+      ["Beginner Tip", "A high score is a starting point, not a buy signal. Open the company page next."]
+    ],
+    deepdive: [
+      ["Selected Company", `${company.symbol} is shown with its trend, balance sheet, and shareholder return context.`],
+      ["Best Signal", "Look for revenue growth and profit growth moving together."],
+      ["Beginner Tip", "If profit rises but cash conversion is weak, inspect annual reports before trusting the earnings story."]
+    ],
+    sector: [
+      ["Current Scope", `Comparing ${sectorName} across ${filtered.length} companies.`],
+      ["Best Signal", "Sector averages help you avoid comparing a bank with an IT services company unfairly."],
+      ["Beginner Tip", "Start with one sector at a time, then compare the strongest company with the sector average."]
+    ],
+    health: [
+      ["Score Lens", "This view separates strong operators from companies that need more checking."],
+      ["Best Signal", "Use score breakdowns on company pages to understand what is driving a high or low score."],
+      ["Beginner Tip", "A weak score is a research warning, not automatically a sell call."]
+    ],
+    growth: [
+      ["Growth Lens", "This view highlights revenue, profit, EPS, and margin direction."],
+      ["Best Signal", "Quality growth means sales, profit, and cash flow improve together."],
+      ["Beginner Tip", "Very fast growth with falling margins can still be risky."]
+    ],
+    debt: [
+      ["Debt Lens", "This view helps you spot companies where borrowing pressure may matter."],
+      ["Best Signal", "Debt-to-equity is more useful when read with interest coverage."],
+      ["Beginner Tip", "Banks and NBFCs naturally carry higher leverage, so compare them with their own sector."]
+    ],
+    dividend: [
+      ["Income Lens", "This view is built for investors who care about payouts and long-term shareholder returns."],
+      ["Best Signal", "A sustainable dividend is better than a temporarily high payout."],
+      ["Beginner Tip", "Check EPS growth before treating a high payout as attractive."]
+    ]
+  };
+
+  container.innerHTML = (guides[dashboard.id] || guides.executive).map(([label, copy], index) => `
+    <article class="dashboard-explainer ${index === 1 ? "blue" : index === 2 ? "yellow" : "red"}">
+      <p class="section-tag">${label}</p>
+      <p>${copy}</p>
+    </article>
+  `).join("");
+}
+
 function updateDocumentTitle(company, dashboard) {
   const map = {
     home: "Bluestock IQ | Nifty 100 For Retail Investors",
@@ -708,6 +790,10 @@ function updateDocumentTitle(company, dashboard) {
 }
 
 function normalizeCompany(company) {
+  const years = company.years ?? [];
+  const growthRows = company.growth_rows ?? company.growthRows ?? buildGrowthRowsFromYears(years);
+  const cagrSummary = company.cagr_summary ?? company.cagrSummary ?? buildCagrSummaryFromYears(years);
+
   return {
     symbol: company.symbol,
     companyName: company.company_name ?? company.companyName,
@@ -728,7 +814,13 @@ function normalizeCompany(company) {
     dividendPayout: company.dividend_payout ?? company.dividendPayout,
     interestCoverage: company.interest_coverage ?? company.interestCoverage,
     cashConversion: company.cash_conversion ?? company.cashConversion,
-    years: company.years ?? [],
+    latestYoySalesGrowth: company.latest_yoy_sales_growth ?? company.latestYoySalesGrowth ?? growthRows[growthRows.length - 1]?.sales_growth_yoy ?? null,
+    latestYoyProfitGrowth: company.latest_yoy_profit_growth ?? company.latestYoyProfitGrowth ?? growthRows[growthRows.length - 1]?.profit_growth_yoy ?? null,
+    latestYoyEpsGrowth: company.latest_yoy_eps_growth ?? company.latestYoyEpsGrowth ?? growthRows[growthRows.length - 1]?.eps_growth_yoy ?? null,
+    scoreBreakdown: company.score_breakdown ?? company.scoreBreakdown ?? {},
+    growthRows,
+    cagrSummary,
+    years,
     pros: company.pros ?? [],
     cons: company.cons ?? [],
     documents: company.documents ?? []
@@ -777,28 +869,156 @@ function syncDashboardCompanySelectOptions() {
 }
 
 function latestAvailableYear() {
-  const years = unique(companies.flatMap((item) => item.years.map((entry) => entry.year))).sort((a, b) => b - a);
+  const years = unique(companies.flatMap((item) => fiscalRows(item).map((entry) => entry.year))).sort((a, b) => b - a);
   return years[0] || new Date().getFullYear();
 }
 
 function renderCompanyDetail(company) {
+  if (!company) {
+    setStatus("company-detail-status", "error", "This company could not be loaded.");
+    return;
+  }
+
+  clearStatus("company-detail-status");
+  const sectorPeers = companies.filter((item) => item.sector === company.sector);
+  const sectorAverage = buildSectorAverage(company.sector);
+  const peerComparison = buildPeerComparison(company);
+  const latestGrowth = company.growthRows[company.growthRows.length - 1] || {};
+
   document.getElementById("selected-company-name").textContent = `${company.companyName} (${company.symbol})`;
   document.getElementById("selected-health-score").textContent = Number(company.healthScore || 0).toFixed(1);
   document.getElementById("selected-health-label").textContent = company.healthLabel || labelFromScore(company.healthScore || 0);
   document.getElementById("selected-company-meta").textContent = [
     company.sector,
     `Revenue ${formatCurrency(company.revenue)}`,
-    `D/E ${Number(company.debtToEquity || 0).toFixed(2)}`
+    `D/E ${Number(company.debtToEquity || 0).toFixed(2)}`,
+    `${sectorPeers.length} sector peers`
   ].join(" / ");
   renderMetricsInto("company-metric-grid", dashboards.find((item) => item.id === "deepdive").metrics({ company, filtered: companies, year: state.year }));
   drawChart(document.getElementById("company-primary-chart"), companyTrendData(company, ["sales", "profit"]));
   drawChart(document.getElementById("company-secondary-chart"), companyMiniProfile(company));
+  drawChart(document.getElementById("growth-trend-chart"), growthTrajectoryData(company));
   renderCompanyProfile(company);
   renderDocuments(company.documents || []);
+  renderMicroStatGrid("yoy-growth-grid", [
+    { label: "Revenue YoY", value: formatPercent(latestGrowth.sales_growth_yoy), note: latestGrowth.sales_growth_yoy >= 0 ? "Growth improved" : "Revenue slipped" },
+    { label: "Profit YoY", value: formatPercent(latestGrowth.profit_growth_yoy), note: latestGrowth.profit_growth_yoy >= 0 ? "Profit rose" : "Profit declined" },
+    { label: "EPS YoY", value: formatPercent(latestGrowth.eps_growth_yoy), note: latestGrowth.eps_growth_yoy >= 0 ? "Per-share earnings grew" : "Per-share earnings weakened" },
+    { label: "OPM Change", value: formatPercent(latestGrowth.opm_change), note: "Year-on-year margin movement" }
+  ]);
+  renderMicroStatGrid("cagr-grid", [
+    { label: "Sales 3Y", value: formatPercent(company.cagrSummary.sales_3y), note: "Short-cycle compounding" },
+    { label: "Sales 5Y", value: formatPercent(company.cagrSummary.sales_5y), note: "Medium-term revenue pace" },
+    { label: "Profit 3Y", value: formatPercent(company.cagrSummary.profit_3y), note: "Short-cycle profit pace" },
+    { label: "Profit 5Y", value: formatPercent(company.cagrSummary.profit_5y), note: "Medium-term profit pace" }
+  ]);
+  renderMicroStatGrid("sector-average-grid", [
+    { label: "Health Score", value: `${Number(company.healthScore || 0).toFixed(1)} vs ${Number(sectorAverage.healthScore || 0).toFixed(1)}`, note: "Company vs sector average" },
+    { label: "ROE", value: `${formatPercent(company.roe)} vs ${formatPercent(sectorAverage.roe)}`, note: "Return on equity comparison" },
+    { label: "OPM", value: `${formatPercent(company.opm)} vs ${formatPercent(sectorAverage.opm)}`, note: "Operating margin comparison" },
+    { label: "Debt / Equity", value: `${Number(company.debtToEquity || 0).toFixed(2)} vs ${Number(sectorAverage.debtToEquity || 0).toFixed(2)}`, note: "Lower is usually safer outside lenders" }
+  ]);
+  renderScoreBreakdown(company.scoreBreakdown);
+  renderPeerComparison(peerComparison);
+  renderBeginnerGuide(company, sectorAverage);
   renderTableInto("company-insight-table-head", "company-insight-table-body", companyYearTable(company));
   document.getElementById("documents-title").textContent = window.location.pathname.startsWith("/companies/")
     ? `${company.symbol} annual reports`
     : "Documents";
+}
+
+function renderMicroStatGrid(containerId, items) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = items.map((item) => `
+    <div class="micro-stat">
+      <span>${item.label}</span>
+      <strong>${item.value}</strong>
+      <small>${item.note}</small>
+    </div>
+  `).join("");
+}
+
+function renderScoreBreakdown(breakdown = {}) {
+  const container = document.getElementById("score-breakdown-list");
+  const entries = Object.entries(breakdown);
+
+  if (!entries.length) {
+    container.innerHTML = `
+      <div class="score-pill">
+        <small>Score Detail</small>
+        <strong>Not available</strong>
+        <p>The warehouse has not produced factor-level scoring for this company yet.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = entries.map(([key, value]) => `
+    <div class="score-pill">
+      <small>${labelize(key)}</small>
+      <strong>${Number(value.score || 0).toFixed(1)} / 100</strong>
+      <p>${value.explanation || `${labelize(key)} score is based on the available financial metrics.`}</p>
+    </div>
+  `).join("");
+}
+
+function renderPeerComparison(payload) {
+  const container = document.getElementById("peer-comparison-grid");
+  const topPeers = payload.topPeers.length ? payload.topPeers : [payload.selectedCompany];
+  const bottomPeers = payload.bottomPeers.length ? payload.bottomPeers : [payload.selectedCompany];
+
+  container.innerHTML = [
+    ...topPeers.map((peer) => peerCard(peer, "best", "Stronger peer")),
+    ...bottomPeers.map((peer) => peerCard(peer, "watch", "Watch peer"))
+  ].join("");
+}
+
+function peerCard(peer, tone, label) {
+  return `
+    <button class="peer-card ${tone}" type="button" data-company-symbol="${peer.symbol}">
+      <small>${label}</small>
+      <strong>${peer.symbol}</strong>
+      <span>Score ${Number(peer.healthScore || 0).toFixed(1)} / ROE ${formatPercent(peer.roe)}</span>
+    </button>
+  `;
+}
+
+function renderBeginnerGuide(company, sectorAverage) {
+  const guides = [
+    {
+      label: "ROE",
+      title: `${formatPercent(company.roe)} return on equity`,
+      copy: `ROE shows how efficiently the company turns shareholder capital into profit. The ${company.sector} average here is ${formatPercent(sectorAverage.roe)}.`
+    },
+    {
+      label: "Debt / Equity",
+      title: `${Number(company.debtToEquity || 0).toFixed(2)} debt load`,
+      copy: "Debt-to-equity compares borrowings with the capital base. Lower is usually safer, but lenders such as banks and NBFCs should be compared within their sector."
+    },
+    {
+      label: "OPM",
+      title: `${formatPercent(company.opm)} operating margin`,
+      copy: `OPM tells you how much operating profit remains from sales before interest and tax. The current sector average is ${formatPercent(sectorAverage.opm)}.`
+    },
+    {
+      label: "Cash Flow",
+      title: `${Number(company.cashConversion || 0).toFixed(2)}x cash conversion`,
+      copy: "Cash conversion compares operating cash flow with accounting profit. Around 1.0x or higher means reported profits are better supported by cash."
+    },
+    {
+      label: "Dividend",
+      title: `${formatPercent(company.dividendPayout)} payout`,
+      copy: "Dividend payout shows how much of profit is returned to shareholders. A moderate, repeatable payout is usually healthier than a very high payout without EPS growth."
+    }
+  ];
+
+  document.getElementById("beginner-guide-grid").innerHTML = guides.map((item) => `
+    <article class="guide-card">
+      <small>${item.label}</small>
+      <strong>${item.title}</strong>
+      <p>${item.copy}</p>
+    </article>
+  `).join("");
 }
 
 function renderDocuments(documents) {
@@ -937,7 +1157,24 @@ function renderCompanyCloud(targetId, data, large = false) {
 
 function renderCompanyCards(data) {
   const container = document.getElementById("company-card-grid");
-  const shortlist = sortedExplorerCompanies(data).slice(0, 12);
+  const pagination = document.getElementById("company-card-pagination");
+  const sorted = sortedExplorerCompanies(data);
+  const totalPages = Math.max(1, Math.ceil(sorted.length / state.companyCardPageSize));
+  state.companyCardPage = Math.min(Math.max(state.companyCardPage, 1), totalPages);
+  const start = (state.companyCardPage - 1) * state.companyCardPageSize;
+  const shortlist = sorted.slice(start, start + state.companyCardPageSize);
+
+  if (!sorted.length) {
+    container.innerHTML = `
+      <article class="company-card company-card-empty">
+        <p class="section-tag">No Matches</p>
+        <h4>Try another company or sector</h4>
+        <p class="company-card-meta">Your current filters did not match the tracked company universe.</p>
+      </article>
+    `;
+    pagination.innerHTML = "";
+    return;
+  }
 
   container.innerHTML = shortlist.map((item) => `
     <article class="company-card">
@@ -953,6 +1190,14 @@ function renderCompanyCards(data) {
       <button class="solid-button" type="button" data-company-symbol="${item.symbol}">Open ${item.symbol}</button>
     </article>
   `).join("");
+
+  pagination.innerHTML = totalPages > 1
+    ? `
+      <button class="ghost-button" type="button" data-card-page="${state.companyCardPage - 1}" ${state.companyCardPage === 1 ? "disabled" : ""}>Previous</button>
+      <span>Page ${state.companyCardPage} of ${totalPages}</span>
+      <button class="solid-button" type="button" data-card-page="${state.companyCardPage + 1}" ${state.companyCardPage === totalPages ? "disabled" : ""}>Next</button>
+    `
+    : `<span>${sorted.length} companies</span>`;
 }
 
 function renderMetricsInto(containerId, metrics) {
@@ -971,9 +1216,11 @@ function renderTableInto(headId, bodyId, table) {
   const body = document.getElementById(bodyId);
   lastRenderedTable = table;
   head.innerHTML = `<tr>${table.columns.map((column) => `<th>${column}</th>`).join("")}</tr>`;
-  body.innerHTML = table.rows.map((row) => `
-    <tr>${row.map((cell, index) => `<td data-label="${escapeAttribute(table.columns[index])}">${cell}</td>`).join("")}</tr>
-  `).join("");
+  body.innerHTML = table.rows.length
+    ? table.rows.map((row) => `
+      <tr>${row.map((cell, index) => `<td data-label="${escapeAttribute(table.columns[index])}">${cell}</td>`).join("")}</tr>
+    `).join("")
+    : `<tr><td colspan="${table.columns.length}" data-label="State">No records available for this view.</td></tr>`;
 }
 
 function renderExplorer(data) {
@@ -1048,32 +1295,200 @@ function renderAboutPage() {
   `).join("");
 }
 
-function drawChart(svg, config) {
-  if (config.type === "bars") {
-    svg.innerHTML = barChartMarkup(config);
+function drawChart(canvas, config) {
+  if (!canvas || !config) {
     return;
   }
 
-  if (config.type === "line") {
-    svg.innerHTML = lineChartMarkup(config);
+  destroyChart(canvas.id);
+
+  if (!window.Chart) {
+    paintCanvasFallback(canvas, "Charts are loading. Refresh if this persists.");
     return;
+  }
+
+  const chartConfig = toChartConfig(config);
+  chartRegistry.set(canvas.id, new Chart(canvas, chartConfig));
+}
+
+function drawSparkline(canvas, values) {
+  if (!canvas) {
+    return;
+  }
+
+  destroyChart(canvas.id);
+
+  if (!window.Chart) {
+    paintCanvasFallback(canvas, "Trend loading");
+    return;
+  }
+
+  chartRegistry.set(canvas.id, new Chart(canvas, {
+    type: "line",
+    data: {
+      labels: values.map((_, index) => index + 1),
+      datasets: [{
+        data: values,
+        borderColor: "#f0c020",
+        borderWidth: 4,
+        pointRadius: 0,
+        tension: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: true }
+      },
+      scales: {
+        x: { display: false },
+        y: { display: false }
+      }
+    }
+  }));
+}
+
+function toChartConfig(config) {
+  const baseOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: "nearest", intersect: false },
+    plugins: {
+      legend: {
+        display: config.type === "line",
+        labels: {
+          color: "#121212",
+          font: { family: "Outfit", weight: "700" }
+        }
+      },
+      tooltip: {
+        backgroundColor: "#121212",
+        titleColor: "#ffffff",
+        bodyColor: "#ffffff",
+        borderColor: "#f0c020",
+        borderWidth: 2,
+        displayColors: true
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: "#121212", font: { family: "Outfit", weight: "700" } },
+        grid: { color: "rgba(18,18,18,0.12)" },
+        border: { color: "#121212", width: 2 }
+      },
+      y: {
+        ticks: { color: "#121212", font: { family: "Outfit", weight: "700" } },
+        grid: { color: "rgba(18,18,18,0.12)" },
+        border: { color: "#121212", width: 2 }
+      }
+    }
+  };
+
+  if (config.type === "bars") {
+    return {
+      type: "bar",
+      data: {
+        labels: config.values.map((item) => item.label),
+        datasets: [{
+          label: "Value",
+          data: config.values.map((item) => item.value),
+          backgroundColor: config.values.map((item) => item.color || "#1040c0"),
+          borderColor: "#121212",
+          borderWidth: 3
+        }]
+      },
+      options: {
+        ...baseOptions,
+        plugins: {
+          ...baseOptions.plugins,
+          legend: { display: false },
+          tooltip: {
+            ...baseOptions.plugins.tooltip,
+            callbacks: {
+              label: (context) => {
+                const item = config.values[context.dataIndex];
+                return `${item.label}: ${item.display ?? item.value}`;
+              }
+            }
+          }
+        }
+      }
+    };
   }
 
   if (config.type === "scatter") {
-    svg.innerHTML = scatterChartMarkup(config);
+    return {
+      type: "scatter",
+      data: {
+        datasets: config.points.map((point) => ({
+          label: point.label,
+          data: [{ x: point.x, y: point.y }],
+          pointRadius: point.size || 8,
+          pointHoverRadius: (point.size || 8) + 3,
+          backgroundColor: point.color || "#d02020",
+          borderColor: "#121212",
+          borderWidth: 2
+        }))
+      },
+      options: {
+        ...baseOptions,
+        plugins: {
+          ...baseOptions.plugins,
+          legend: { display: false }
+        },
+        scales: {
+          x: { ...baseOptions.scales.x, title: { display: true, text: config.xLabel, color: "#121212" } },
+          y: { ...baseOptions.scales.y, title: { display: true, text: config.yLabel, color: "#121212" } }
+        }
+      }
+    };
+  }
+
+  return {
+    type: "line",
+    data: {
+      labels: config.labels,
+      datasets: config.series.map((entry) => ({
+        label: labelize(entry.name),
+        data: entry.values,
+        borderColor: entry.color,
+        backgroundColor: entry.color,
+        borderWidth: 3,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        tension: 0
+      }))
+    },
+    options: baseOptions
+  };
+}
+
+function destroyChart(canvasId) {
+  const existing = chartRegistry.get(canvasId);
+  if (existing) {
+    existing.destroy();
+    chartRegistry.delete(canvasId);
   }
 }
 
-function drawSparkline(svg, values) {
-  const width = 280;
-  const height = 72;
-  const points = scalePoints(values, width, height, 12);
-  const linePath = pointsToPath(points);
-
-  svg.innerHTML = `
-    <line x1="12" y1="${height - 10}" x2="${width - 10}" y2="${height - 10}" stroke="#121212" stroke-width="3"></line>
-    <path d="${linePath}" fill="none" stroke="#f0c020" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"></path>
-  `;
+function paintCanvasFallback(canvas, message) {
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return;
+  }
+  const width = canvas.width || canvas.clientWidth || 320;
+  const height = canvas.height || canvas.clientHeight || 160;
+  context.clearRect(0, 0, width, height);
+  context.fillStyle = "#f0c020";
+  context.fillRect(0, 0, width, height);
+  context.strokeStyle = "#121212";
+  context.lineWidth = 4;
+  context.strokeRect(4, 4, width - 8, height - 8);
+  context.fillStyle = "#121212";
+  context.font = "700 16px Outfit, sans-serif";
+  context.fillText(message, 18, 36);
 }
 
 function barChartMarkup(config) {
@@ -1177,28 +1592,34 @@ function sectorBarData(data, key) {
 }
 
 function companyRankingData(data, key, limit, ascending = false) {
-  const sorted = [...data].sort((left, right) => ascending ? left[key] - right[key] : right[key] - left[key]);
+  const sorted = [...data].sort((left, right) => ascending
+    ? Number(left[key] || 0) - Number(right[key] || 0)
+    : Number(right[key] || 0) - Number(left[key] || 0));
 
   const values = sorted
     .slice(0, limit)
-    .map((item) => ({
-      label: item.symbol,
-      value: Number(item[key].toFixed ? item[key].toFixed(1) : item[key]),
-      display: item[key].toFixed ? item[key].toFixed(1) : item[key],
-      color: colorForSector(item.sector)
-    }));
+    .map((item) => {
+      const value = Number(item[key] || 0);
+      return {
+        label: item.symbol,
+        value: Number(value.toFixed(1)),
+        display: value.toFixed(1),
+        color: colorForSector(item.sector)
+      };
+    });
 
   return { type: "bars", values };
 }
 
 function companyTrendData(company, keys) {
+  const rows = fiscalRows(company);
   return {
     type: "line",
-    labels: company.years.map((entry) => entry.year),
+    labels: rows.map((entry) => entry.year),
     series: keys.map((key) => ({
       name: key,
       color: key === "sales" ? "#0f766e" : key === "profit" ? "#d96c3f" : "#144d5f",
-      values: companyYears(company, key)
+      values: rows.map((entry) => Number(entry[key] || 0))
     }))
   };
 }
@@ -1207,10 +1628,10 @@ function companyMiniProfile(company) {
   return {
     type: "bars",
     values: [
-      { label: "OPM", value: company.opm, display: `${company.opm}%`, color: "#1040c0" },
-      { label: "ROE", value: company.roe, display: `${company.roe}%`, color: "#d02020" },
-      { label: "D/E", value: company.debtToEquity * 10, display: company.debtToEquity.toFixed(2), color: "#121212" },
-      { label: "Payout", value: company.dividendPayout, display: `${company.dividendPayout}%`, color: "#f0c020" }
+      { label: "OPM", value: Number(company.opm || 0), display: formatPercent(company.opm), color: "#1040c0" },
+      { label: "ROE", value: Number(company.roe || 0), display: formatPercent(company.roe), color: "#d02020" },
+      { label: "D/E", value: Number(company.debtToEquity || 0) * 10, display: Number(company.debtToEquity || 0).toFixed(2), color: "#121212" },
+      { label: "Payout", value: Number(company.dividendPayout || 0), display: formatPercent(company.dividendPayout), color: "#f0c020" }
     ]
   };
 }
@@ -1353,7 +1774,7 @@ function navigateTo(path) {
 function companyYearTable(company) {
   return {
     columns: ["Year", "Sales", "Net Profit", "OPM", "EPS", "Dividend Payout"],
-    rows: company.years.map((entry) => [
+    rows: fiscalRows(company).map((entry) => [
       entry.year,
       formatCurrency(entry.sales),
       formatCurrency(entry.profit),
@@ -1374,6 +1795,77 @@ function prosConsTable(company) {
   };
 }
 
+function buildGrowthRowsFromYears(years = []) {
+  return [...years]
+    .filter((entry) => Number(entry.year) > 0)
+    .sort((left, right) => Number(left.year || 0) - Number(right.year || 0))
+    .map((entry, index, rows) => {
+      const previous = rows[index - 1];
+      return {
+        year: entry.year,
+        sales: entry.sales,
+        profit: entry.profit,
+        eps: entry.eps,
+        opm: entry.opm,
+        sales_growth_yoy: previous ? growthRate(entry.sales, previous.sales) : null,
+        profit_growth_yoy: previous ? growthRate(entry.profit, previous.profit) : null,
+        eps_growth_yoy: previous ? growthRate(entry.eps, previous.eps) : null,
+        opm_change: previous ? Number(entry.opm || 0) - Number(previous.opm || 0) : null
+      };
+    });
+}
+
+function buildCagrSummaryFromYears(years = []) {
+  const rows = [...years]
+    .filter((entry) => Number(entry.year) > 0)
+    .sort((left, right) => Number(left.year || 0) - Number(right.year || 0));
+  return {
+    sales_3y: cagrFromRows(rows, "sales", 3),
+    sales_5y: cagrFromRows(rows, "sales", 5),
+    sales_10y: cagrFromRows(rows, "sales", 10),
+    profit_3y: cagrFromRows(rows, "profit", 3),
+    profit_5y: cagrFromRows(rows, "profit", 5),
+    profit_10y: cagrFromRows(rows, "profit", 10)
+  };
+}
+
+function buildSectorAverage(sector) {
+  const peers = companies.filter((item) => item.sector === sector);
+  return {
+    healthScore: average(peers.map((item) => item.healthScore)),
+    roe: average(peers.map((item) => item.roe)),
+    opm: average(peers.map((item) => item.opm)),
+    debtToEquity: average(peers.map((item) => item.debtToEquity)),
+    salesCagr3y: average(peers.map((item) => item.salesCagr3y))
+  };
+}
+
+function buildPeerComparison(company) {
+  const peers = companies
+    .filter((item) => item.sector === company.sector)
+    .sort((left, right) => Number(right.healthScore || 0) - Number(left.healthScore || 0));
+
+  return {
+    selectedCompany: company,
+    topPeers: peers.slice(0, 3),
+    bottomPeers: peers.slice(-3).reverse()
+  };
+}
+
+function growthTrajectoryData(company) {
+  const rows = (company.growthRows.length ? company.growthRows : buildGrowthRowsFromYears(company.years))
+    .filter((entry) => Number(entry.year) > 0);
+  return {
+    type: "line",
+    labels: rows.map((entry) => entry.year),
+    series: [
+      { name: "sales_growth_yoy", color: "#1040c0", values: rows.map((entry) => entry.sales_growth_yoy ?? 0) },
+      { name: "profit_growth_yoy", color: "#d02020", values: rows.map((entry) => entry.profit_growth_yoy ?? 0) },
+      { name: "eps_growth_yoy", color: "#f0c020", values: rows.map((entry) => entry.eps_growth_yoy ?? 0) }
+    ]
+  };
+}
+
 function bestSector(data, key = "healthScore") {
   const sectors = unique(data.map((item) => item.sector)).map((sector) => {
     const values = data.filter((item) => item.sector === sector);
@@ -1386,12 +1878,18 @@ function bestSector(data, key = "healthScore") {
 }
 
 function sumTrend(data, key) {
-  const years = unique(data.flatMap((item) => item.years.map((entry) => entry.year))).sort((a, b) => a - b);
-  return years.map((year) => sum(data.map((item) => item.years.find((entry) => entry.year === year)?.[key] || 0)));
+  const years = unique(data.flatMap((item) => fiscalRows(item).map((entry) => entry.year))).sort((a, b) => a - b);
+  return years.map((year) => sum(data.map((item) => fiscalRows(item).find((entry) => entry.year === year)?.[key] || 0)));
 }
 
 function companyYears(company, key) {
-  return company.years.map((entry) => entry[key]);
+  return fiscalRows(company).map((entry) => entry[key]);
+}
+
+function fiscalRows(company) {
+  return (company.years || [])
+    .filter((entry) => Number(entry.year) > 0)
+    .sort((left, right) => Number(left.year) - Number(right.year));
 }
 
 function fillSelect(select, values, currentValue, labelFormatter = (value) => value) {
@@ -1419,7 +1917,12 @@ function colorForSector(sector) {
 }
 
 function labelize(key) {
-  return key.replace(/([A-Z])/g, " $1").replace(/^./, (value) => value.toUpperCase());
+  return String(key)
+    .replace(/_/g, " ")
+    .replace(/([A-Z])/g, " $1")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^./, (value) => value.toUpperCase());
 }
 
 function labelFromScore(score) {
@@ -1457,6 +1960,13 @@ function formatCurrency(value) {
   return `Rs ${Math.round(value).toLocaleString("en-IN")} Cr`;
 }
 
+function formatPercent(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) {
+    return "NA";
+  }
+  return `${Number(value).toFixed(1)}%`;
+}
+
 function formatCompact(value) {
   return new Intl.NumberFormat("en-IN", { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
@@ -1466,7 +1976,7 @@ function average(values) {
 }
 
 function sum(values) {
-  return values.reduce((total, value) => total + value, 0);
+  return values.reduce((total, value) => total + Number(value || 0), 0);
 }
 
 function unique(values) {
@@ -1482,6 +1992,43 @@ function compareValues(left, right) {
     return String(left ?? "").localeCompare(String(right ?? ""), "en", { sensitivity: "base" });
   }
   return Number(left ?? 0) - Number(right ?? 0);
+}
+
+function growthRate(current, previous) {
+  if (current === null || current === undefined || !previous) {
+    return null;
+  }
+  return ((Number(current) - Number(previous)) / Math.abs(Number(previous))) * 100;
+}
+
+function cagrFromRows(rows, key, periods) {
+  if (rows.length <= periods) {
+    return null;
+  }
+  const start = Number(rows[rows.length - periods - 1]?.[key]);
+  const end = Number(rows[rows.length - 1]?.[key]);
+  if (!start || !end || start <= 0 || end <= 0) {
+    return null;
+  }
+  return ((end / start) ** (1 / periods) - 1) * 100;
+}
+
+function setStatus(elementId, type, message) {
+  const element = document.getElementById(elementId);
+  if (!element) {
+    return;
+  }
+  element.className = `page-status visible ${type}`;
+  element.textContent = message;
+}
+
+function clearStatus(elementId) {
+  const element = document.getElementById(elementId);
+  if (!element) {
+    return;
+  }
+  element.className = "page-status";
+  element.textContent = "";
 }
 
 function tableToCsv(table) {
