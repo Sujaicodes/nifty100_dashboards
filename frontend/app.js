@@ -295,7 +295,7 @@ const dashboards = [
     },
     primaryTitle: "Leverage ranking",
     primaryTag: "Debt intensity",
-    primaryChart: (context) => companyRankingData(context.filtered, "debtToEquity", 6, true),
+    primaryChart: (context) => companyRankingData(context.filtered, "debtToEquity", 6),
     secondaryTitle: "Coverage vs leverage",
     secondaryChart: (context) => scatterData(context.filtered, "debtToEquity", "interestCoverage"),
     tableTitle: "Borrowing watchlist",
@@ -398,7 +398,7 @@ const dashboardChartExplanations = {
     secondary: "This compares profitability and payout signals for the selected company. Use it to see whether growth is paired with returns and shareholder payouts."
   },
   debt: {
-    primary: "This ranks companies by debt-to-equity. Lower bars are usually safer for non-financial businesses, while lenders need sector-specific comparison.",
+    primary: "This ranks companies by debt-to-equity intensity. Taller bars mean more leverage pressure, so use this as a risk screen before checking interest coverage and sector context.",
     secondary: "This compares leverage with interest coverage. A stronger company usually has manageable debt and enough profit to cover interest costs."
   },
   dividend: {
