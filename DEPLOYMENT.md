@@ -30,6 +30,29 @@ https://<your-railway-domain>/api/health/
 https://<your-railway-domain>/api/bootstrap/
 ```
 
+## Render backend
+
+1. Create a Render Web Service.
+2. Use the repo root as the Render root directory. Leave Root Directory blank unless Render requires a value.
+3. Use Docker deployment with `backend/Dockerfile`.
+4. Set backend variables:
+   - `DJANGO_SECRET_KEY`
+   - `DJANGO_DEBUG=False`
+   - `DJANGO_ALLOWED_HOSTS=<your-render-domain>`
+   - `CORS_ALLOWED_ORIGINS=<your-vercel-domain>`
+   - `CSRF_TRUSTED_ORIGINS=<your-vercel-domain>`
+   - `DATABASE_URL=<external-postgres-url>`
+   - `REDIS_URL=<external-redis-url>`
+5. After deploy, run:
+
+```powershell
+cd backend
+python manage.py migrate
+python manage.py import_excel_workbooks
+```
+
+Keeping the Render root at the repo root is important because the Excel importer reads from `data/source/`.
+
 ## Vercel frontend
 
 1. Import the repo into Vercel with `frontend/` as the project root.

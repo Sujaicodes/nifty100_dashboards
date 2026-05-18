@@ -10,3 +10,4 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 COPY . /app
 
+CMD ["sh", "-c", "gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000}"]
