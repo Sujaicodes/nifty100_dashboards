@@ -5,8 +5,9 @@ Private operator checklist for deploying the frontend on Vercel and the Django A
 ## Railway backend
 
 1. Create a Railway project for the backend.
-2. Add PostgreSQL and Redis services.
-3. Set backend variables:
+2. Set the Railway service root directory to `backend`.
+3. Add PostgreSQL and Redis services.
+4. Set backend variables:
    - `DJANGO_SECRET_KEY`
    - `DJANGO_DEBUG=False`
    - `DJANGO_ALLOWED_HOSTS=<your-railway-domain>`
@@ -14,15 +15,15 @@ Private operator checklist for deploying the frontend on Vercel and the Django A
    - `CSRF_TRUSTED_ORIGINS=<your-vercel-domain>`
    - `DATABASE_URL=<railway-postgres-url>`
    - `REDIS_URL=<railway-redis-url>`
-4. Deploy the backend service.
-5. Run:
+5. Deploy the backend service. Railway should use `backend/Procfile` as the start command.
+6. Run:
 
 ```powershell
 python manage.py migrate
 python manage.py import_excel_workbooks
 ```
 
-6. Verify:
+7. Verify:
 
 ```text
 https://<your-railway-domain>/api/health/
