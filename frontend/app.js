@@ -782,14 +782,14 @@ function renderHome(data) {
   renderHeroStats(data);
   drawSparkline(document.getElementById("hero-sparkline"), sumTrend(data, "sales"));
   renderTrustStrip(data);
-  renderCompanyCloud("home-company-cloud", sortByScore(data).slice(0, 24));
+  renderCompanyCloud("home-company-cloud", sortByScore(data).slice(0, 24), false, data.length);
   renderHomePaths();
 }
 
 function renderCompaniesPage(data, company) {
   syncCompanyDetailLink(company);
   renderSectorChips();
-  renderCompanyCloud("company-cloud", sortByScore(data).slice(0, 36), true);
+  renderCompanyCloud("company-cloud", sortByScore(data).slice(0, 36), true, companies.length);
   renderCompanyCards(data);
   renderExplorer(data);
 }
@@ -1250,19 +1250,97 @@ function renderSectorChips() {
   `).join("");
 }
 
-function renderCompanyCloud(targetId, data, large = false) {
+function renderCompanyCloud(targetId, data, large = false, totalCount = data.length) {
   const container = document.getElementById(targetId);
   const palette = ["red", "blue", "yellow"];
-  container.innerHTML = data.map((item, index) => `
+  const remainingCount = Math.max(totalCount - data.length, 0);
+  const chips = data.map((item, index) => `
     <button
       type="button"
-      class="company-chip ${palette[index % palette.length]} ${large ? "large" : ""}"
+      class="company-chip logo-chip ${palette[index % palette.length]} ${large ? "large" : ""}"
       data-company-symbol="${item.symbol}"
       style="--float-delay:${(index % 7) * 0.18}s"
+      title="${escapeAttribute(item.companyName)}"
     >
-      ${item.symbol}
+      ${companyLogoMarkup(item)}
     </button>
-  `).join("");
+  `);
+
+  if (remainingCount > 0) {
+    chips.push(`
+      <div class="company-chip logo-chip more-chip ${large ? "large" : ""}" aria-label="${remainingCount} more companies are available in the table below">
+        <span class="company-logo-frame">
+          <span class="company-logo-fallback">+${remainingCount}</span>
+        </span>
+        <span class="company-chip-copy">
+          <strong>And many more</strong>
+          <small>${totalCount} warehouse companies</small>
+        </span>
+      </div>
+    `);
+  }
+
+  container.innerHTML = chips.join("");
+}
+
+function companyLogoMarkup(company) {
+  const primaryLogo = isValidImageUrl(company.companyLogo) ? company.companyLogo.trim() : companyFaviconUrl(company);
+  const secondaryLogo = primaryLogo === company.companyLogo?.trim() ? companyFaviconUrl(company) : "";
+  const hasLogo = Boolean(primaryLogo);
+  const fallback = `<span class="company-logo-fallback" ${hasLogo ? "hidden" : ""}>${logoInitials(company)}</span>`;
+  const image = hasLogo
+    ? `<img class="company-logo-tile" src="${escapeAttribute(primaryLogo)}" ${secondaryLogo ? `data-fallback-src="${escapeAttribute(secondaryLogo)}"` : ""} alt="${escapeAttribute(company.companyName)} logo" loading="lazy" decoding="async" onerror="handleCompanyLogoError(this);">`
+    : "";
+
+  return `
+    <span class="company-logo-frame">
+      ${image}
+      ${fallback}
+    </span>
+    <span class="company-chip-copy">
+      <strong>${company.symbol}</strong>
+      <small>${company.companyName}</small>
+    </span>
+  `;
+}
+
+function handleCompanyLogoError(image) {
+  const fallbackSrc = image.dataset.fallbackSrc;
+  if (fallbackSrc) {
+    image.dataset.fallbackSrc = "";
+    image.src = fallbackSrc;
+    return;
+  }
+
+  image.hidden = true;
+  const fallback = image.nextElementSibling;
+  if (fallback) {
+    fallback.hidden = false;
+  }
+}
+
+function isValidImageUrl(value) {
+  return typeof value === "string" && /^https?:\/\//i.test(value.trim());
+}
+
+function companyFaviconUrl(company) {
+  if (!isValidImageUrl(company.website)) {
+    return "";
+  }
+
+  try {
+    const host = new URL(company.website).hostname;
+    return host ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64` : "";
+  } catch (error) {
+    return "";
+  }
+}
+
+function logoInitials(company) {
+  const source = company.companyName || company.symbol || "";
+  const words = source.replace(/[^a-z0-9 ]/gi, " ").trim().split(/\s+/).filter(Boolean);
+  const initials = words.slice(0, 2).map((word) => word[0]).join("");
+  return (initials || company.symbol.slice(0, 2) || "BI").toUpperCase();
 }
 
 function renderCompanyCards(data) {
@@ -2509,7 +2587,7 @@ function downloadText(filename, content, type) {
 }
 
 function escapeAttribute(value) {
-  return String(value).replace(/"/g, "&quot;");
+  return String(value).replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 }
 
 init();

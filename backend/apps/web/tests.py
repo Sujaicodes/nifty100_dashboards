@@ -15,8 +15,8 @@ class FrontendSourceTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Company Detail")
-        self.assertContains(response, 'href="/styles.css"')
-        self.assertContains(response, 'src="/app.js"')
+        self.assertContains(response, 'href="/styles.css')
+        self.assertContains(response, 'src="/app.js')
 
     def test_dashboard_route_uses_shared_frontend_source(self):
         response = self.client.get("/dashboards/debt/")

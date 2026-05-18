@@ -980,6 +980,112 @@ button:disabled {
   animation-delay: var(--float-delay, 0s);
 }
 
+.company-chip.logo-chip {
+  justify-content: start;
+  gap: 0.75rem;
+  width: min(15rem, 100%);
+  min-height: 4.6rem;
+  padding: 0.65rem 0.75rem;
+  letter-spacing: 0;
+  text-align: left;
+}
+
+.company-chip.logo-chip.large {
+  width: min(16.5rem, 100%);
+  min-height: 5.2rem;
+}
+
+.company-logo-frame {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 3.1rem;
+  height: 3.1rem;
+  border: 3px solid var(--border);
+  background: var(--white);
+  overflow: hidden;
+}
+
+.company-chip.logo-chip.large .company-logo-frame {
+  width: 3.55rem;
+  height: 3.55rem;
+}
+
+.company-logo-tile {
+  width: 100%;
+  height: 100%;
+  padding: 0.28rem;
+  object-fit: contain;
+  background: var(--white);
+}
+
+.company-logo-fallback {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  background: var(--foreground);
+  color: var(--white);
+  font-size: 0.92rem;
+  font-weight: 900;
+}
+
+.company-chip-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.16rem;
+}
+
+.company-chip-copy strong,
+.company-chip-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.company-chip-copy strong {
+  font-size: 0.92rem;
+  line-height: 1;
+}
+
+.company-chip-copy small {
+  max-width: 9rem;
+  font-size: 0.66rem;
+  font-weight: 900;
+  line-height: 1.15;
+  opacity: 0.84;
+}
+
+.company-chip.logo-chip.large .company-chip-copy small {
+  max-width: 10.6rem;
+}
+
+.company-chip.more-chip {
+  order: -1;
+  width: min(12rem, 100%);
+  min-height: 4.1rem;
+  padding: 0.55rem 0.65rem;
+  background: var(--foreground);
+  color: var(--white);
+  text-transform: none;
+  animation: none;
+}
+
+.company-chip.more-chip .company-logo-frame {
+  width: 2.8rem;
+  height: 2.8rem;
+  background: var(--primary-yellow);
+}
+
+.company-chip.more-chip .company-logo-fallback {
+  background: var(--primary-yellow);
+  color: var(--foreground);
+}
+
+.company-chip.more-chip .company-chip-copy strong {
+  font-size: 0.86rem;
+}
+
 .company-chip.red {
   background: var(--primary-red);
   color: var(--white);
