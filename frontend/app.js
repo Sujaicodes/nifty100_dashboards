@@ -437,7 +437,7 @@ async function init() {
 }
 
 function applyRouteState() {
-  const path = window.location.pathname;
+  const path = currentRoutePath();
   const companyMatch = path.match(/^\/companies\/([^/]+)\/?$/i);
   const dashboardMatch = path.match(/^\/dashboards\/([^/]+)\/?$/i);
 
@@ -477,6 +477,18 @@ function applyRouteState() {
   }
 
   state.pageType = "home";
+}
+
+function currentRoutePath() {
+  if (window.location.hash.startsWith("#/")) {
+    return window.location.hash.slice(1);
+  }
+  return window.location.pathname;
+}
+
+function routeHref(path) {
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return normalized === "/" ? "/#/" : `/#${normalized}`;
 }
 
 async function loadCompanies() {
@@ -535,6 +547,20 @@ function renderDashboardCards() {
 }
 
 function bindEvents() {
+  document.addEventListener("click", (event) => {
+    const link = event.target.closest("a[href]");
+    if (!link || link.target || link.hasAttribute("download") || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
+    const href = link.getAttribute("href") || "";
+    const route = href.startsWith("/#/") ? href.slice(2) : href.startsWith("/") && !href.startsWith("//") ? href : "";
+    if (!route || route.startsWith("/api/") || route.endsWith(".css") || route.endsWith(".js")) {
+      return;
+    }
+    event.preventDefault();
+    navigateTo(route);
+  });
+
   document.getElementById("sector-select").addEventListener("change", (event) => {
     state.sector = event.target.value;
     state.companyCardPage = 1;
@@ -733,7 +759,7 @@ function render() {
 
 function syncCompanyDetailLink(company) {
   const link = document.getElementById("company-detail-link");
-  link.href = `/companies/${encodeURIComponent(company.symbol)}/`;
+  link.href = routeHref(`/companies/${encodeURIComponent(company.symbol)}/`);
   link.textContent = `Open ${company.symbol} detail page`;
 }
 
@@ -1006,7 +1032,7 @@ function renderCompanyDetail(company) {
   renderPeerComparison(peerComparison);
   renderBeginnerGuide(company, sectorAverage);
   renderTableInto("company-insight-table-head", "company-insight-table-body", companyYearTable(company));
-  document.getElementById("documents-title").textContent = window.location.pathname.startsWith("/companies/")
+  document.getElementById("documents-title").textContent = currentRoutePath().startsWith("/companies/")
     ? `${company.symbol} annual reports`
     : "Documents";
 }
@@ -1202,9 +1228,9 @@ function renderTrustStrip(data) {
 function renderHomePaths() {
   const container = document.getElementById("home-path-grid");
   container.innerHTML = [
-    { label: "Start Here", title: "Explore Companies", copy: "Search companies, compare sectors, and open simple detail pages.", href: "/companies/", color: "yellow" },
-    { label: "Visual Learning", title: "Browse Dashboards", copy: "Pick a guided dashboard for debt, growth, dividends, or financial health.", href: "/dashboards/", color: "blue" },
-    { label: "Source Material", title: "Open Reports", copy: "Go straight to annual report links when you want to read the underlying filing.", href: "/reports/", color: "red" }
+    { label: "Start Here", title: "Explore Companies", copy: "Search companies, compare sectors, and open simple detail pages.", href: routeHref("/companies/"), color: "yellow" },
+    { label: "Visual Learning", title: "Browse Dashboards", copy: "Pick a guided dashboard for debt, growth, dividends, or financial health.", href: routeHref("/dashboards/"), color: "blue" },
+    { label: "Source Material", title: "Open Reports", copy: "Go straight to annual report links when you want to read the underlying filing.", href: routeHref("/reports/"), color: "red" }
   ].map((item) => `
     <a class="explainer-card ${item.color}" href="${item.href}">
       <p class="section-tag">${item.label}</p>
@@ -2185,7 +2211,7 @@ function setActivePage() {
 }
 
 function navigateTo(path) {
-  window.history.pushState({}, "", path);
+  window.history.pushState({}, "", routeHref(path));
   applyRouteState();
   window.scrollTo({ top: 0, behavior: "smooth" });
   render();
