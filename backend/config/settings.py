@@ -20,6 +20,14 @@ def env_list(name: str, default: str = "") -> list[str]:
     return [item.strip().rstrip("/") for item in env_value(name, default).split(",") if item.strip()]
 
 
+def allowed_hosts() -> list[str]:
+    hosts = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
+    render_hostname = env_value("RENDER_EXTERNAL_HOSTNAME")
+    if render_hostname and render_hostname not in hosts:
+        hosts.append(render_hostname)
+    return hosts
+
+
 def database_url_value() -> str:
     value = env_value("DATABASE_URL")
     if not value:
@@ -36,7 +44,7 @@ def database_url_value() -> str:
 
 SECRET_KEY = env_value("DJANGO_SECRET_KEY", "dev-only-secret-key")
 DEBUG = env_value("DJANGO_DEBUG", "True").lower() == "true"
-ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
+ALLOWED_HOSTS = allowed_hosts()
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
 
