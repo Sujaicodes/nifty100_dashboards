@@ -43,13 +43,8 @@ https://<your-railway-domain>/api/bootstrap/
    - `CSRF_TRUSTED_ORIGINS=<your-vercel-domain>`
    - `DATABASE_URL=<external-postgres-url>`
    - `REDIS_URL=<external-redis-url>`
-5. After deploy, run:
-
-```powershell
-cd backend
-python manage.py migrate
-python manage.py import_excel_workbooks
-```
+   - `IMPORT_EXCEL_ON_STARTUP=true`
+5. Deploy. The Docker startup script runs migrations and imports the Excel warehouse automatically before starting the API.
 
 Keeping the Render root at the repo root is important because the Excel importer reads from `data/source/`.
 

@@ -404,6 +404,7 @@ class Command(BaseCommand):
 
     def compute_health_scores(self) -> None:
         computed_at = timezone.now()
+        MlScoreFact.objects.all().delete()
         for company_payload in list_companies():
             company = Company.objects.get(symbol=company_payload["symbol"])
             score_breakdown = company_payload.get("score_breakdown", {})
