@@ -25,6 +25,8 @@ def allowed_hosts() -> list[str]:
     render_hostname = env_value("RENDER_EXTERNAL_HOSTNAME")
     if render_hostname and render_hostname not in hosts:
         hosts.append(render_hostname)
+    if env_value("RENDER").lower() == "true" and ".onrender.com" not in hosts:
+        hosts.append(".onrender.com")
     return hosts
 
 
