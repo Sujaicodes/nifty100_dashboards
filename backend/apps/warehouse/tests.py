@@ -18,8 +18,10 @@ from apps.warehouse.models import (
     MlScoreFact,
     ProfitLossFact,
     ProsConsFact,
+    Sector,
     YearDimension,
 )
+from apps.warehouse.document_import import seed_documents_from_source_if_empty
 from apps.warehouse.management.commands.import_excel_workbooks import Command as ImportExcelCommand
 
 
@@ -204,3 +206,19 @@ class ImportExcelWorkbooksCommandTests(TestCase):
         self.assertEqual(ProsConsFact.objects.filter(symbol=company).count(), 2)
         self.assertTrue(DocumentFact.objects.filter(symbol=company, year=year, annual_report__contains="tcs-annual-report").exists())
         self.assertGreater(MlScoreFact.objects.get(symbol=company).overall_score, 0)
+
+    def test_seed_documents_from_source_repairs_empty_document_table(self):
+        with TemporaryDirectory() as directory:
+            source_dir = Path(directory)
+            write_xlsx(
+                source_dir / "documents.xlsx",
+                ["company_id", "year", "annual_report"],
+                [["TCS", "2024", "https://example.com/tcs-2024.pdf"]],
+            )
+            sector = Sector.objects.create(sector_code="IT", sector_name="IT")
+            company = Company.objects.create(symbol="TCS", company_name="Tata Consultancy", sector=sector)
+
+            imported = seed_documents_from_source_if_empty(source_dir=source_dir)
+
+        self.assertEqual(imported, 1)
+        self.assertTrue(DocumentFact.objects.filter(symbol=company, annual_report="https://example.com/tcs-2024.pdf").exists())

@@ -17,6 +17,7 @@ from apps.warehouse.models import (
     Sector,
     YearDimension,
 )
+from apps.warehouse.document_import import seed_documents_from_source_if_empty
 from .sample_data import COMPANIES
 
 
@@ -73,6 +74,14 @@ def _serialize_warehouse_company(company: Company, related: dict | None = None) 
 
 def _serialize_warehouse_companies(companies: list[Company], related: dict | None = None) -> list[dict]:
     symbols = [company.symbol for company in companies]
+    if related is None:
+        try:
+            imported_documents = seed_documents_from_source_if_empty()
+            if imported_documents:
+                print(f"Seeded {imported_documents} annual report links from bundled source workbook.", flush=True)
+        except Exception as exc:
+            print(f"Document source seed skipped: {type(exc).__name__}: {exc}", flush=True)
+
     related = related or {
         "latest_scores": _latest_by_symbol(
             MlScoreFact.objects.filter(symbol_id__in=symbols).select_related("health_label").order_by("symbol_id", "-computed_at")
