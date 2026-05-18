@@ -472,7 +472,8 @@ def available_years() -> list[int]:
         try:
             years = YearDimension.objects.values_list("fiscal_year", flat=True).distinct()
             return sorted((year for year in years if year is not None), reverse=True)
-        except DatabaseError:
+        except Exception as exc:
+            print(f"Warehouse years lookup failed: {type(exc).__name__}: {exc}", flush=True)
             pass
     years = {entry["year"] for company in COMPANIES for entry in company["years"]}
     return sorted(years, reverse=True)
@@ -482,7 +483,8 @@ def sectors() -> list[str]:
     if _warehouse_companies_exist():
         try:
             return list(Sector.objects.order_by("sector_name").values_list("sector_name", flat=True))
-        except DatabaseError:
+        except Exception as exc:
+            print(f"Warehouse sector lookup failed: {type(exc).__name__}: {exc}", flush=True)
             pass
     return sorted({company["sector"] for company in COMPANIES})
 
@@ -523,11 +525,22 @@ def sector_summary(companies: list[dict] | None = None) -> list[dict]:
 
 
 def bootstrap_payload() -> dict:
-    companies = list_companies()
-    return {
-        "companies": companies,
-        "sectors": sectors(),
-        "years": available_years(),
-        "overview": executive_overview(companies),
-        "sector_summary": sector_summary(companies),
-    }
+    try:
+        companies = list_companies()
+        return {
+            "companies": companies,
+            "sectors": sectors(),
+            "years": available_years(),
+            "overview": executive_overview(companies),
+            "sector_summary": sector_summary(companies),
+        }
+    except Exception as exc:
+        print(f"Bootstrap payload failed: {type(exc).__name__}: {exc}", flush=True)
+        companies = attach_scores(COMPANIES)
+        return {
+            "companies": companies,
+            "sectors": sorted({company["sector"] for company in companies}),
+            "years": sorted({entry["year"] for company in companies for entry in company["years"]}, reverse=True),
+            "overview": executive_overview(companies),
+            "sector_summary": sector_summary(companies),
+        }
