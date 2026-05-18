@@ -46,6 +46,10 @@ def _is_meaningful_note(text: str) -> bool:
     return bool(normalized) and normalized.upper() not in {"NULL", "N/A", "NA", "NONE", "-"}
 
 
+def _is_valid_url(text: str) -> bool:
+    return text.startswith(("http://", "https://"))
+
+
 def _warehouse_queryset():
     return Company.objects.select_related("sector")
 
@@ -143,6 +147,7 @@ def _serialize_warehouse_companies(companies: list[Company], related: dict | Non
                 "document_type": document.document_type,
             }
             for document in related["documents"].get(company.symbol, [])
+            if _is_valid_url(document.annual_report)
         ]
 
         payloads.append(

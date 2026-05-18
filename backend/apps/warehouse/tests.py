@@ -213,7 +213,10 @@ class ImportExcelWorkbooksCommandTests(TestCase):
             write_xlsx(
                 source_dir / "documents.xlsx",
                 ["company_id", "year", "annual_report"],
-                [["TCS", "2024", "https://example.com/tcs-2024.pdf"]],
+                [
+                    ["TCS", "2024", "https://example.com/tcs-2024.pdf"],
+                    ["TCS", "2023", "Null"],
+                ],
             )
             sector = Sector.objects.create(sector_code="IT", sector_name="IT")
             company = Company.objects.create(symbol="TCS", company_name="Tata Consultancy", sector=sector)
@@ -222,3 +225,4 @@ class ImportExcelWorkbooksCommandTests(TestCase):
 
         self.assertEqual(imported, 1)
         self.assertTrue(DocumentFact.objects.filter(symbol=company, annual_report="https://example.com/tcs-2024.pdf").exists())
+        self.assertFalse(DocumentFact.objects.filter(symbol=company, annual_report="Null").exists())

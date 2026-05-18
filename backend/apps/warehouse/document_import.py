@@ -22,6 +22,10 @@ def _symbol_value(record: dict[str, str]) -> str:
     return _text_value(record, "company_id", "symbol", "ticker", "code", "company").upper().replace(" ", "")
 
 
+def _is_valid_report_url(value: str) -> bool:
+    return value.startswith(("http://", "https://"))
+
+
 def _year_defaults(label: str) -> dict:
     fiscal_year = int(label) if label.isdigit() else 0
     return {
@@ -63,7 +67,7 @@ def seed_documents_from_source_if_empty(source_dir: Path | None = None) -> int:
         symbol = _symbol_value(record)
         raw_year = _text_value(record, "year", "period", "year_label")
         annual_report = _text_value(record, "annual_report", "document_url", "url", "link")
-        if not symbol or symbol not in company_ids or not raw_year or not annual_report:
+        if not symbol or symbol not in company_ids or not raw_year or not _is_valid_report_url(annual_report):
             continue
         year_label = raw_year.strip()
         identity = (symbol, year_label, annual_report)
