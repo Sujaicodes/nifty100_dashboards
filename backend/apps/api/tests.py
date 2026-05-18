@@ -195,6 +195,125 @@ class ApiSmokeTests(APITestCase):
         self.assertAlmostEqual(growth_response.data["latest"]["sales_growth_yoy"], 17.6470588235, places=4)
         self.assertIsNone(growth_response.data["cagr_summary"]["sales_3y"])
 
+    def test_company_without_manual_pros_cons_gets_generated_investor_notes(self):
+        sector = Sector.objects.create(sector_code="IT", sector_name="IT")
+        company = Company.objects.create(symbol="AUTO", company_name="Auto Notes Ltd", sector=sector)
+        prior_year = YearDimension.objects.create(year_label="Mar 2023", fiscal_year=2023, quarter="Q4", sort_order=2023)
+        year = YearDimension.objects.create(year_label="Mar 2024", fiscal_year=2024, quarter="Q4", sort_order=2024)
+        label = HealthLabel.objects.create(label_name="AVERAGE", min_score=50, max_score=69, color_hex="#f0c020")
+
+        ProfitLossFact.objects.create(
+            symbol=company,
+            year=prior_year,
+            sales=Decimal("900"),
+            operating_profit=Decimal("150"),
+            opm_pct=Decimal("16"),
+            net_profit=Decimal("90"),
+            eps=Decimal("9"),
+            dividend_payout_pct=Decimal("20"),
+            interest_coverage=Decimal("4.0"),
+        )
+        ProfitLossFact.objects.create(
+            symbol=company,
+            year=year,
+            sales=Decimal("1100"),
+            operating_profit=Decimal("230"),
+            opm_pct=Decimal("21"),
+            net_profit=Decimal("140"),
+            eps=Decimal("14"),
+            dividend_payout_pct=Decimal("24"),
+            interest_coverage=Decimal("6.2"),
+        )
+        BalanceSheetFact.objects.create(
+            symbol=company,
+            year=year,
+            equity_capital=Decimal("100"),
+            reserves=Decimal("500"),
+            borrowings=Decimal("180"),
+            total_assets=Decimal("900"),
+            debt_to_equity=Decimal("0.3000"),
+            equity_ratio=Decimal("0.6667"),
+        )
+        CashFlowFact.objects.create(
+            symbol=company,
+            year=year,
+            operating_activity=Decimal("170"),
+            investing_activity=Decimal("-35"),
+            financing_activity=Decimal("-15"),
+            net_cash_flow=Decimal("120"),
+            free_cash_flow=Decimal("135"),
+            cash_conversion_ratio=Decimal("1.2143"),
+        )
+        AnalysisFact.objects.create(
+            symbol=company,
+            period_label="3Y",
+            compounded_sales_growth_pct=Decimal("12.50"),
+            compounded_profit_growth_pct=Decimal("15.20"),
+            stock_price_cagr_pct=Decimal("9.10"),
+            roe_pct=Decimal("22.00"),
+        )
+        MlScoreFact.objects.create(
+            symbol=company,
+            computed_at="2026-05-10T12:00:00Z",
+            overall_score=Decimal("68.00"),
+            profitability_score=Decimal("72.00"),
+            growth_score=Decimal("70.00"),
+            leverage_score=Decimal("76.00"),
+            cashflow_score=Decimal("74.00"),
+            dividend_score=Decimal("45.00"),
+            trend_score=Decimal("60.00"),
+            health_label=label,
+        )
+
+        response = self.client.get(reverse("company-pros-cons", kwargs={"symbol": "AUTO"}))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(len(response.data["pros"]), 3)
+        self.assertGreaterEqual(len(response.data["cons"]), 3)
+        self.assertTrue(any("operating margin" in item.lower() for item in response.data["pros"]))
+        self.assertTrue(any("health score" in item.lower() for item in response.data["cons"]))
+
+    def test_placeholder_pros_cons_are_removed_and_topped_up(self):
+        sector = Sector.objects.create(sector_code="AUTO", sector_name="Auto")
+        company = Company.objects.create(symbol="NOTE", company_name="Note Motors", sector=sector)
+        year = YearDimension.objects.create(year_label="Mar 2024", fiscal_year=2024, quarter="Q4", sort_order=2024)
+        label = HealthLabel.objects.create(label_name="GOOD", min_score=70, max_score=84, color_hex="#1040c0")
+        ProfitLossFact.objects.create(
+            symbol=company,
+            year=year,
+            sales=Decimal("700"),
+            operating_profit=Decimal("140"),
+            opm_pct=Decimal("20"),
+            net_profit=Decimal("90"),
+            eps=Decimal("8"),
+            dividend_payout_pct=Decimal("18"),
+            interest_coverage=Decimal("5"),
+        )
+        BalanceSheetFact.objects.create(symbol=company, year=year, borrowings=Decimal("100"), debt_to_equity=Decimal("0.4000"))
+        MlScoreFact.objects.create(
+            symbol=company,
+            computed_at="2026-05-10T12:00:00Z",
+            overall_score=Decimal("74.00"),
+            profitability_score=Decimal("75.00"),
+            growth_score=Decimal("68.00"),
+            leverage_score=Decimal("78.00"),
+            cashflow_score=Decimal("62.00"),
+            dividend_score=Decimal("50.00"),
+            trend_score=Decimal("60.00"),
+            health_label=label,
+        )
+        ProsConsFact.objects.create(symbol=company, is_pro=True, category="General", text="Strong operating margin")
+        ProsConsFact.objects.create(symbol=company, is_pro=True, category="General", text="NULL")
+        ProsConsFact.objects.create(symbol=company, is_pro=False, category="General", text="-")
+
+        response = self.client.get(reverse("company-pros-cons", kwargs={"symbol": "NOTE"}))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertNotIn("NULL", response.data["pros"])
+        self.assertNotIn("-", response.data["cons"])
+        self.assertGreaterEqual(len(response.data["pros"]), 3)
+        self.assertGreaterEqual(len(response.data["cons"]), 3)
+
     def test_sector_comparison_returns_selected_sectors(self):
         it = Sector.objects.create(sector_code="IT", sector_name="IT")
         banking = Sector.objects.create(sector_code="BANK", sector_name="Banking")

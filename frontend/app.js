@@ -328,6 +328,85 @@ const dashboards = [
   }
 ];
 
+const metricExplanations = {
+  "OPM": "Operating Profit Margin. It shows how much operating profit remains from sales before interest and tax. Higher usually means the core business has more breathing room.",
+  "Avg OPM": "Average Operating Profit Margin for the visible group. Use it to compare sector or filtered-company profitability.",
+  "ROE": "Return on Equity. It shows how efficiently a company turns shareholder capital into profit. Higher is usually better, but quality and debt still matter.",
+  "Average ROE": "Average Return on Equity across the current selection. It is useful for judging capital efficiency at a group level.",
+  "Avg ROE": "Average Return on Equity across the current selection. It is useful for judging capital efficiency at a group level.",
+  "Debt / Equity": "Debt-to-equity compares borrowings with the shareholder capital base. Lower is usually safer outside banks and NBFCs.",
+  "Avg D/E": "Average debt-to-equity for the visible companies. Banks and NBFCs should be compared within their own sector.",
+  "3Y Sales CAGR": "Three-year sales CAGR shows the annualized sales growth rate across three years. It smooths out one-year jumps.",
+  "Avg 3Y CAGR": "Average three-year sales CAGR for the visible group. It helps compare broad growth momentum.",
+  "Cash Conversion": "Cash conversion compares operating cash flow with net profit. Around 1.0x or higher means profits are better supported by cash.",
+  "Quality Earnings": "Companies where cash conversion is at least 1.0x, meaning reported profit is backed by operating cash flow.",
+  "Health Score": "A blended score across profitability, growth, leverage, cash flow, dividends, and trend signals. Treat it as a research starting point, not advice.",
+  "Avg Health Score": "Average health score across the visible companies. It summarizes quality for the current filter.",
+  "Dividend Payout": "The share of profit returned as dividends. A steady moderate payout is often healthier than an unusually high one.",
+  "Avg Dividend Payout": "Average dividend payout across the current group. Read it with EPS growth before judging income quality.",
+  "Interest Coverage": "How many times operating profit covers interest cost. Higher coverage means more cushion against borrowing pressure.",
+  "Coverage Strength": "Average interest coverage for the selected companies. Higher means interest costs are easier to absorb."
+};
+
+const metricGlossary = [
+  {
+    label: "OPM",
+    title: "Operating Profit Margin",
+    copy: "OPM tells you how much operating profit remains from sales before interest and tax. A higher OPM usually means the core business has stronger pricing power or cost control."
+  },
+  {
+    label: "ROE",
+    title: "Return on Equity",
+    copy: "ROE shows how efficiently shareholder capital becomes profit. Strong ROE is attractive, but it should be checked with debt, cash flow, and consistency."
+  },
+  {
+    label: "D/E",
+    title: "Debt to Equity",
+    copy: "D/E compares borrowings with the company capital base. Lower is usually safer for normal companies, while banks and NBFCs need sector-specific comparison."
+  },
+  {
+    label: "CAGR",
+    title: "Compounded Growth",
+    copy: "CAGR smooths growth across multiple years. It helps you avoid overreacting to one unusually good or bad year."
+  },
+  {
+    label: "Cash Conversion",
+    title: "Profit backed by cash",
+    copy: "Cash conversion compares operating cash flow with net profit. Around 1.0x or higher means accounting profit is better supported by actual cash."
+  }
+];
+
+const dashboardChartExplanations = {
+  executive: {
+    primary: "This chart shows which sectors contribute the largest revenue base inside the current filter. Bigger bars mean more scale, not automatically better quality.",
+    secondary: "This ranks companies by ROE, a capital-efficiency measure. Use it to spot efficient businesses, then check debt and cash conversion before trusting the signal."
+  },
+  deepdive: {
+    primary: "This compares revenue with net profit over time. A healthier pattern is revenue and profit rising together rather than sales growing while profit stalls.",
+    secondary: "This compact profile compares margin, ROE, leverage, and payout. It is a fast snapshot of profitability, balance-sheet pressure, and shareholder returns."
+  },
+  sector: {
+    primary: "This compares average health score by sector. Use it to avoid unfairly comparing companies from very different business models.",
+    secondary: "This compares sector-level OPM. Higher margin sectors usually have more operating cushion, but valuation and growth still matter."
+  },
+  health: {
+    primary: "This ranks companies by health score. Treat the leaderboard as a shortlist generator, then inspect the factor breakdown on the company page.",
+    secondary: "This compares the count of pros and cons for the selected company. More pros are useful only when the watchpoints are also understood."
+  },
+  growth: {
+    primary: "This plots growth against cash conversion. The ideal area is strong growth with cash support, because growth without cash can be fragile.",
+    secondary: "This compares profitability and payout signals for the selected company. Use it to see whether growth is paired with returns and shareholder payouts."
+  },
+  debt: {
+    primary: "This ranks companies by debt-to-equity. Lower bars are usually safer for non-financial businesses, while lenders need sector-specific comparison.",
+    secondary: "This compares leverage with interest coverage. A stronger company usually has manageable debt and enough profit to cover interest costs."
+  },
+  dividend: {
+    primary: "This ranks dividend payout. High payout can be attractive, but it needs EPS growth and cash flow support to be sustainable.",
+    secondary: "This shows EPS over time for the selected company. Rising EPS gives dividends a stronger foundation."
+  }
+};
+
 const state = {
   pageType: "home",
   dashboardId: "executive",
@@ -711,6 +790,8 @@ function renderDashboardDetail(context) {
   renderMetricsInto("metric-grid", dashboard.metrics(context));
   drawChart(document.getElementById("primary-chart"), dashboard.primaryChart(context));
   drawChart(document.getElementById("secondary-chart"), dashboard.secondaryChart(context));
+  renderChartExplanation("primary-chart-explanation", chartExplanation(dashboard.id, "primary"));
+  renderChartExplanation("secondary-chart-explanation", chartExplanation(dashboard.id, "secondary"));
   renderTableInto("insight-table-head", "insight-table-body", dashboard.table(context));
 }
 
@@ -898,6 +979,9 @@ function renderCompanyDetail(company) {
   drawChart(document.getElementById("company-primary-chart"), companyTrendData(company, ["sales", "profit"]));
   drawChart(document.getElementById("company-secondary-chart"), companyMiniProfile(company));
   drawChart(document.getElementById("growth-trend-chart"), growthTrajectoryData(company));
+  renderChartExplanation("company-primary-chart-explanation", chartExplanation("deepdive", "primary"));
+  renderChartExplanation("company-secondary-chart-explanation", chartExplanation("deepdive", "secondary"));
+  renderChartExplanation("growth-trend-chart-explanation", "This chart turns yearly revenue, profit, and EPS into growth rates. Look for all three moving in the same direction rather than one line carrying the story alone.");
   renderCompanyProfile(company);
   renderDocuments(company.documents || []);
   renderMicroStatGrid("yoy-growth-grid", [
@@ -1203,12 +1287,50 @@ function renderCompanyCards(data) {
 function renderMetricsInto(containerId, metrics) {
   const grid = document.getElementById(containerId);
   grid.innerHTML = metrics.map((item) => `
-    <div class="metric-card">
-      <p>${item.label}</p>
+    <div class="metric-card" title="${escapeAttribute(metricExplanation(item.label))}" tabindex="0">
+      <p>${item.label}<span class="metric-help" aria-label="${escapeAttribute(metricExplanation(item.label))}">?</span></p>
       <strong>${item.value}</strong>
       <small>${item.note}</small>
     </div>
   `).join("");
+}
+
+function metricExplanation(label) {
+  if (metricExplanations[label]) {
+    return metricExplanations[label];
+  }
+  if (label.includes("CAGR")) {
+    return metricExplanations["3Y Sales CAGR"];
+  }
+  if (label.includes("D/E") || label.includes("Debt")) {
+    return metricExplanations["Debt / Equity"];
+  }
+  if (label.includes("ROE")) {
+    return metricExplanations["ROE"];
+  }
+  if (label.includes("OPM") || label.includes("Margin")) {
+    return metricExplanations["OPM"];
+  }
+  if (label.includes("Cash")) {
+    return metricExplanations["Cash Conversion"];
+  }
+  if (label.includes("Health")) {
+    return metricExplanations["Health Score"];
+  }
+  return "This metric summarizes the current dashboard scope. Use it as a quick signal, then inspect the chart and company detail page for context.";
+}
+
+function renderChartExplanation(elementId, text) {
+  const element = document.getElementById(elementId);
+  if (!element) {
+    return;
+  }
+  element.textContent = text;
+}
+
+function chartExplanation(dashboardId, slot) {
+  return dashboardChartExplanations[dashboardId]?.[slot]
+    || "This chart highlights the selected metric for the current filter. Use it as a guide for what to inspect next, not as a standalone conclusion.";
 }
 
 function renderTableInto(headId, bodyId, table) {
@@ -1277,6 +1399,8 @@ function renderReportsPage() {
 
 function renderAboutPage() {
   const grid = document.getElementById("about-score-grid");
+  const bragGrid = document.getElementById("about-brag-grid");
+  const glossaryGrid = document.getElementById("metric-glossary-grid");
   const items = [
     { label: "Profitability", title: "Can the company earn well?", copy: "Looks at margins and return strength to see whether profits are healthy." },
     { label: "Growth", title: "Is the business expanding?", copy: "Checks revenue and profit growth trends over multiple periods." },
@@ -1293,6 +1417,57 @@ function renderAboutPage() {
       <p>${item.copy}</p>
     </article>
   `).join("");
+
+  const bragItems = [
+    {
+      label: "Warehouse Brain",
+      title: "Real data underneath the shine",
+      copy: "The interface is not a pretty shell over random cards. It is driven by a PostgreSQL warehouse built from multi-year company exports, annual report links, and normalized financial facts."
+    },
+    {
+      label: "Beginner Power",
+      title: "Complex finance, made readable",
+      copy: "A first-time investor can move from company discovery to debt, growth, cash flow, score breakdowns, peer comparison, and original filings without getting buried in spreadsheet chaos."
+    },
+    {
+      label: "Score Engine",
+      title: "Six lenses in one view",
+      copy: "Profitability, growth, leverage, cash flow, dividends, and trend signals are compressed into a practical health score with explanations that point users toward the next question."
+    },
+    {
+      label: "Research Depth",
+      title: "From cloud view to company microscope",
+      copy: "The site starts broad with market and sector views, then drills into company pages with charts, pros, watchpoints, documents, and beginner guidance."
+    },
+    {
+      label: "Launch Ready",
+      title: "Built like a real product",
+      copy: "The frontend can run independently, the backend exposes documented API routes, and the stack is shaped for a clean production rollout."
+    },
+    {
+      label: "Investor Feel",
+      title: "A dashboard that teaches while it shows",
+      copy: "Bluestock IQ does not just display numbers. It explains why a metric matters, where the risk sits, and which source report to open when the user wants proof."
+    }
+  ];
+
+  bragGrid.innerHTML = bragItems.map((item, index) => `
+    <article class="brag-card ${index % 3 === 0 ? "blue" : index % 3 === 1 ? "yellow" : "red"}">
+      <p class="section-tag">${item.label}</p>
+      <h4>${item.title}</h4>
+      <p>${item.copy}</p>
+    </article>
+  `).join("");
+
+  glossaryGrid.innerHTML = metricGlossary.map((item, index) => `
+    <article class="metric-glossary-card ${index % 2 === 0 ? "yellow" : "blue"}">
+      <strong>${item.label}</strong>
+      <div>
+        <h4>${item.title}</h4>
+        <p>${item.copy}</p>
+      </div>
+    </article>
+  `).join("");
 }
 
 function drawChart(canvas, config) {
@@ -1303,7 +1478,7 @@ function drawChart(canvas, config) {
   destroyChart(canvas.id);
 
   if (!window.Chart) {
-    paintCanvasFallback(canvas, "Charts are loading. Refresh if this persists.");
+    drawNativeChart(canvas, config);
     return;
   }
 
@@ -1319,7 +1494,7 @@ function drawSparkline(canvas, values) {
   destroyChart(canvas.id);
 
   if (!window.Chart) {
-    paintCanvasFallback(canvas, "Trend loading");
+    drawNativeSparkline(canvas, values);
     return;
   }
 
@@ -1347,6 +1522,239 @@ function drawSparkline(canvas, values) {
         y: { display: false }
       }
     }
+  }));
+}
+
+function prepareCanvas(canvas) {
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return null;
+  }
+  const width = Math.max(canvas.clientWidth || 320, 1);
+  const height = Math.max(canvas.clientHeight || 180, 1);
+  const pixelRatio = window.devicePixelRatio || 1;
+  canvas.width = Math.round(width * pixelRatio);
+  canvas.height = Math.round(height * pixelRatio);
+  context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  context.clearRect(0, 0, width, height);
+  context.lineJoin = "miter";
+  context.lineCap = "square";
+  context.font = "700 12px Outfit, sans-serif";
+  return { context, width, height };
+}
+
+function drawNativeChart(canvas, config) {
+  if (config.type === "bars") {
+    drawNativeBars(canvas, config);
+    return;
+  }
+
+  if (config.type === "scatter") {
+    drawNativeScatter(canvas, config);
+    return;
+  }
+
+  drawNativeLine(canvas, config);
+}
+
+function drawNativeSparkline(canvas, values) {
+  const prepared = prepareCanvas(canvas);
+  if (!prepared) {
+    return;
+  }
+  const { context, width, height } = prepared;
+  const padding = 8;
+  const points = scaleCanvasPoints(values, width, height, padding);
+
+  context.strokeStyle = "#121212";
+  context.lineWidth = 3;
+  context.beginPath();
+  context.moveTo(padding, height - padding);
+  context.lineTo(width - padding, height - padding);
+  context.stroke();
+
+  drawCanvasPath(context, points, "#f0c020", 4);
+}
+
+function drawNativeBars(canvas, config) {
+  const prepared = prepareCanvas(canvas);
+  if (!prepared) {
+    return;
+  }
+  const { context, width, height } = prepared;
+  const values = config.values || [];
+  const padding = { top: 46, right: 16, bottom: 42, left: 24 };
+  const chartHeight = Math.max(height - padding.top - padding.bottom, 1);
+  const maxValue = Math.max(...values.map((item) => Number(item.value || 0)), 1);
+  const slot = (width - padding.left - padding.right) / Math.max(values.length, 1);
+  const barWidth = Math.min(54, slot * 0.58);
+
+  context.strokeStyle = "#121212";
+  context.lineWidth = 3;
+  context.beginPath();
+  context.moveTo(padding.left, height - padding.bottom);
+  context.lineTo(width - padding.right, height - padding.bottom);
+  context.stroke();
+  drawCanvasLegend(context, [
+    { label: "Bar height = value", color: "#121212" },
+    { label: "Color = sector/category", color: values[0]?.color || "#1040c0" }
+  ], padding.left, 16);
+
+  values.forEach((item, index) => {
+    const value = Number(item.value || 0);
+    const scaledHeight = (value / maxValue) * chartHeight;
+    const x = padding.left + slot * index + (slot - barWidth) / 2;
+    const y = height - padding.bottom - scaledHeight;
+    context.fillStyle = item.color || "#1040c0";
+    context.strokeStyle = "#121212";
+    context.lineWidth = 3;
+    context.fillRect(x, y, barWidth, scaledHeight);
+    context.strokeRect(x, y, barWidth, scaledHeight);
+    drawCanvasLabel(context, item.display ?? value, x + barWidth / 2, Math.max(y - 8, 14), "#121212");
+    drawCanvasLabel(context, item.label, x + barWidth / 2, height - 16, "#121212");
+  });
+}
+
+function drawNativeLine(canvas, config) {
+  const prepared = prepareCanvas(canvas);
+  if (!prepared) {
+    return;
+  }
+  const { context, width, height } = prepared;
+  const series = config.series || [];
+  const allValues = series.flatMap((item) => item.values || []).map((value) => Number(value || 0));
+  const padding = { top: 48, right: 18, bottom: 38, left: 34 };
+  const maxValue = Math.max(...allValues, 1);
+  const minValue = Math.min(...allValues, 0);
+  const range = maxValue - minValue || 1;
+
+  drawCanvasAxes(context, width, height, padding);
+  drawCanvasLegend(context, series.map((entry) => ({
+    label: labelize(entry.name),
+    color: entry.color || "#1040c0"
+  })), padding.left, 16);
+
+  series.forEach((entry) => {
+    const values = entry.values || [];
+    const points = values.map((value, index) => ({
+      x: padding.left + index * ((width - padding.left - padding.right) / Math.max(values.length - 1, 1)),
+      y: height - padding.bottom - ((Number(value || 0) - minValue) / range) * (height - padding.top - padding.bottom)
+    }));
+    drawCanvasPath(context, points, entry.color || "#1040c0", 3);
+    points.forEach((point) => drawCanvasMarker(context, point.x, point.y, entry.color || "#1040c0"));
+  });
+
+  (config.labels || []).forEach((label, index, labels) => {
+    const x = padding.left + index * ((width - padding.left - padding.right) / Math.max(labels.length - 1, 1));
+    drawCanvasLabel(context, label, x, height - 14, "#5f6b77");
+  });
+}
+
+function drawNativeScatter(canvas, config) {
+  const prepared = prepareCanvas(canvas);
+  if (!prepared) {
+    return;
+  }
+  const { context, width, height } = prepared;
+  const points = config.points || [];
+  const padding = { top: 50, right: 20, bottom: 42, left: 38 };
+  const maxX = Math.max(...points.map((point) => Number(point.x || 0)), 1);
+  const maxY = Math.max(...points.map((point) => Number(point.y || 0)), 1);
+
+  drawCanvasAxes(context, width, height, padding);
+  drawCanvasLegend(context, [
+    { label: `X = ${config.xLabel || "horizontal metric"}`, color: "#1040c0" },
+    { label: `Y = ${config.yLabel || "vertical metric"}`, color: "#d02020" }
+  ], padding.left, 16);
+  points.forEach((point) => {
+    const x = padding.left + (Number(point.x || 0) / maxX) * (width - padding.left - padding.right);
+    const y = height - padding.bottom - (Number(point.y || 0) / maxY) * (height - padding.top - padding.bottom);
+    drawCanvasCircle(context, x, y, point.size || 8, point.color || "#d02020");
+    drawCanvasLabel(context, point.label, x, y - 14, "#121212");
+  });
+  drawCanvasLabel(context, config.xLabel || "", width / 2, height - 12, "#121212");
+}
+
+function drawCanvasAxes(context, width, height, padding) {
+  context.strokeStyle = "#121212";
+  context.lineWidth = 3;
+  context.beginPath();
+  context.moveTo(padding.left, padding.top);
+  context.lineTo(padding.left, height - padding.bottom);
+  context.lineTo(width - padding.right, height - padding.bottom);
+  context.stroke();
+}
+
+function drawCanvasPath(context, points, color, lineWidth) {
+  if (!points.length) {
+    return;
+  }
+  context.strokeStyle = color;
+  context.lineWidth = lineWidth;
+  context.beginPath();
+  points.forEach((point, index) => {
+    if (index === 0) {
+      context.moveTo(point.x, point.y);
+    } else {
+      context.lineTo(point.x, point.y);
+    }
+  });
+  context.stroke();
+}
+
+function drawCanvasMarker(context, x, y, color) {
+  context.fillStyle = color;
+  context.strokeStyle = "#121212";
+  context.lineWidth = 2;
+  context.fillRect(x - 4, y - 4, 8, 8);
+  context.strokeRect(x - 4, y - 4, 8, 8);
+}
+
+function drawCanvasCircle(context, x, y, radius, color) {
+  context.fillStyle = color;
+  context.strokeStyle = "#121212";
+  context.lineWidth = 3;
+  context.beginPath();
+  context.arc(x, y, radius, 0, Math.PI * 2);
+  context.fill();
+  context.stroke();
+}
+
+function drawCanvasLabel(context, text, x, y, color) {
+  context.fillStyle = color;
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillText(String(text ?? ""), x, y);
+}
+
+function drawCanvasLegend(context, items, x, y) {
+  context.save();
+  context.textAlign = "left";
+  context.textBaseline = "middle";
+  context.font = "700 11px Outfit, sans-serif";
+  let cursorX = x;
+  items.slice(0, 4).forEach((item) => {
+    const label = String(item.label || "").slice(0, 28);
+    context.fillStyle = item.color || "#1040c0";
+    context.strokeStyle = "#121212";
+    context.lineWidth = 2;
+    context.fillRect(cursorX, y - 5, 10, 10);
+    context.strokeRect(cursorX, y - 5, 10, 10);
+    context.fillStyle = "#121212";
+    context.fillText(label, cursorX + 15, y);
+    cursorX += Math.min(context.measureText(label).width + 34, 150);
+  });
+  context.restore();
+}
+
+function scaleCanvasPoints(values, width, height, padding) {
+  const numericValues = values.map((value) => Number(value || 0));
+  const maxValue = Math.max(...numericValues, 1);
+  const minValue = Math.min(...numericValues, 0);
+  const range = maxValue - minValue || 1;
+  return numericValues.map((value, index) => ({
+    x: padding + index * ((width - padding * 2) / Math.max(numericValues.length - 1, 1)),
+    y: height - padding - ((value - minValue) / range) * (height - padding * 2)
   }));
 }
 
@@ -1392,7 +1800,7 @@ function toChartConfig(config) {
       data: {
         labels: config.values.map((item) => item.label),
         datasets: [{
-          label: "Value",
+          label: "Bar height = value",
           data: config.values.map((item) => item.value),
           backgroundColor: config.values.map((item) => item.color || "#1040c0"),
           borderColor: "#121212",
@@ -1403,7 +1811,13 @@ function toChartConfig(config) {
         ...baseOptions,
         plugins: {
           ...baseOptions.plugins,
-          legend: { display: false },
+          legend: {
+            display: true,
+            labels: {
+              color: "#121212",
+              font: { family: "Outfit", weight: "700" }
+            }
+          },
           tooltip: {
             ...baseOptions.plugins.tooltip,
             callbacks: {
@@ -1436,7 +1850,13 @@ function toChartConfig(config) {
         ...baseOptions,
         plugins: {
           ...baseOptions.plugins,
-          legend: { display: false }
+          legend: {
+            display: true,
+            labels: {
+              color: "#121212",
+              font: { family: "Outfit", weight: "700" }
+            }
+          }
         },
         scales: {
           x: { ...baseOptions.scales.x, title: { display: true, text: config.xLabel, color: "#121212" } },

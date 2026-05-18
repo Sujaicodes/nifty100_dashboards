@@ -422,7 +422,7 @@ button:disabled {
 .hero-panel {
   position: relative;
   overflow: hidden;
-  padding: 1.5rem;
+  padding: 1.25rem;
   background: var(--primary-blue);
   color: var(--white);
   box-shadow: var(--shadow-large);
@@ -464,7 +464,7 @@ button:disabled {
 .hero-score {
   position: relative;
   z-index: 1;
-  margin-top: 1rem;
+  margin-top: 0.85rem;
 }
 
 .hero-score p {
@@ -476,7 +476,7 @@ button:disabled {
 
 .hero-score strong {
   display: block;
-  font-size: clamp(4rem, 8vw, 6rem);
+  font-size: clamp(3.4rem, 6vw, 4.8rem);
   line-height: 0.88;
   font-weight: 900;
 }
@@ -496,7 +496,7 @@ button:disabled {
   position: relative;
   z-index: 1;
   width: 100%;
-  height: 4.5rem;
+  height: 3.2rem;
 }
 
 .chart-canvas-shell {
@@ -508,18 +508,24 @@ button:disabled {
 .sparkline-shell {
   position: relative;
   z-index: 1;
-  margin-top: 1.25rem;
-  padding: 0.5rem;
+  margin-top: 0.9rem;
+  padding: 0.4rem;
   background: rgba(255, 255, 255, 0.12);
   border: 3px solid var(--border);
-  min-height: 5rem;
+  height: 4rem;
+  min-height: 4rem;
 }
 
 .hero-composition {
-  position: relative;
-  z-index: 1;
-  min-height: 15rem;
-  margin: 1rem 0 1.5rem;
+  position: absolute;
+  z-index: 0;
+  right: 1rem;
+  bottom: 6rem;
+  width: min(16rem, 46%);
+  height: 8rem;
+  margin: 0;
+  opacity: 0.28;
+  pointer-events: none;
 }
 
 .composition-circle,
@@ -570,7 +576,8 @@ button:disabled {
   z-index: 1;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
+  gap: 0.6rem;
+  margin-top: 1rem;
 }
 
 .hero-stat,
@@ -580,6 +587,15 @@ button:disabled {
   background: var(--white);
   border: 3px solid var(--border);
   color: var(--foreground);
+}
+
+.metric-card:focus-visible {
+  outline: 4px solid var(--primary-yellow);
+  outline-offset: 3px;
+}
+
+.hero-stat {
+  padding: 0.7rem 0.85rem;
 }
 
 .hero-stat::after,
@@ -626,12 +642,43 @@ button:disabled {
   letter-spacing: 0.08em;
 }
 
+.metric-card p {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.metric-help {
+  display: inline-grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: var(--primary-yellow);
+  color: var(--foreground);
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.hero-stat p {
+  padding-right: 1rem;
+  font-size: 0.68rem;
+}
+
 .hero-stat strong,
 .metric-card strong {
   display: block;
   margin-top: 0.55rem;
   font-size: 1.85rem;
   font-weight: 900;
+}
+
+.hero-stat strong {
+  margin-top: 0.35rem;
+  font-size: clamp(1.05rem, 2vw, 1.35rem);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
 }
 
 .metric-card small {
@@ -719,7 +766,42 @@ button:disabled {
   gap: 0.75rem;
 }
 
+.about-brag-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.about-brag-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.metric-glossary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
 .explainer-card {
+  padding: 1rem;
+  border: 4px solid var(--border);
+  box-shadow: var(--shadow-large);
+  background: var(--white);
+}
+
+.brag-card {
+  border: 4px solid var(--border);
+  box-shadow: var(--shadow-large);
+  background: var(--white);
+}
+
+.brag-card {
+  padding: 1.1rem;
+}
+
+.metric-glossary-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.9rem;
   padding: 1rem;
   border: 4px solid var(--border);
   box-shadow: var(--shadow-large);
@@ -735,6 +817,36 @@ button:disabled {
   letter-spacing: -0.04em;
 }
 
+.brag-card h4 {
+  margin: 0.4rem 0 0.55rem;
+  font-size: 1.35rem;
+  line-height: 1;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.04em;
+}
+
+.metric-glossary-card h4 {
+  margin: 0 0 0.45rem;
+  font-size: 1.2rem;
+  line-height: 1;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.04em;
+}
+
+.brag-card p {
+  margin: 0;
+  line-height: 1.55;
+  font-weight: 500;
+}
+
+.metric-glossary-card p {
+  margin: 0;
+  line-height: 1.55;
+  font-weight: 500;
+}
+
 .explainer-card.red {
   background: var(--primary-red);
   color: var(--white);
@@ -748,6 +860,43 @@ button:disabled {
 .explainer-card.yellow {
   background: var(--primary-yellow);
 }
+
+.brag-card.red {
+  background: var(--primary-red);
+  color: var(--white);
+}
+
+.brag-card.blue {
+  background: var(--primary-blue);
+  color: var(--white);
+}
+
+.brag-card.yellow {
+  background: var(--primary-yellow);
+}
+
+.metric-glossary-card.yellow {
+  background: var(--primary-yellow);
+}
+
+.metric-glossary-card.blue {
+  background: var(--primary-blue);
+  color: var(--white);
+}
+
+.metric-glossary-card > strong {
+  display: grid;
+  place-items: center;
+  min-width: 3rem;
+  height: 3rem;
+  padding: 0 0.45rem;
+  border: 3px solid var(--border);
+  background: var(--white);
+  color: var(--foreground);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
 
 .filter-grid {
   display: grid;
@@ -1138,6 +1287,22 @@ table,
   background: var(--background);
   border: 4px solid var(--border);
   min-height: 18rem;
+}
+
+.chart-explanation {
+  margin: 0.75rem 0 0;
+  padding: 0.75rem 0.85rem;
+  border: 2px solid var(--border);
+  background: var(--white);
+  color: var(--foreground);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.chart-card-contrast .chart-explanation {
+  background: var(--white);
+  color: var(--foreground);
 }
 
 .chart-card-contrast .chart-stage {
@@ -1759,6 +1924,8 @@ th {
   .company-intel-grid,
   .page-band-grid,
   .home-path-grid,
+  .about-brag-grid,
+  .metric-glossary-grid,
   .reports-grid,
   .company-card-grid,
   .dashboard-guide-grid,
@@ -1797,12 +1964,15 @@ th {
   }
 
   .metric-grid,
-  .hero-stat-grid,
   .home-trust-strip,
   .filter-grid,
   .company-card-stats,
   .reports-grid {
     grid-template-columns: 1fr;
+  }
+
+  .hero-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .hero-copy,

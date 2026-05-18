@@ -27,6 +27,19 @@ def _to_float(value) -> float:
     return float(value)
 
 
+def _format_metric(value: float, suffix: str = "") -> str:
+    return f"{value:.1f}{suffix}"
+
+
+def _format_ratio(value: float) -> str:
+    return f"{value:.2f}x"
+
+
+def _is_meaningful_note(text: str) -> bool:
+    normalized = text.strip()
+    return bool(normalized) and normalized.upper() not in {"NULL", "N/A", "NA", "NONE", "-"}
+
+
 def _warehouse_queryset():
     return Company.objects.select_related("sector")
 
@@ -62,12 +75,16 @@ def _serialize_warehouse_company(company: Company) -> dict:
             }
         )
 
-    pros = list(
-        ProsConsFact.objects.filter(symbol=company, is_pro=True).values_list("text", flat=True)
-    )
-    cons = list(
-        ProsConsFact.objects.filter(symbol=company, is_pro=False).values_list("text", flat=True)
-    )
+    pros = [
+        text.strip()
+        for text in ProsConsFact.objects.filter(symbol=company, is_pro=True).values_list("text", flat=True)
+        if _is_meaningful_note(text)
+    ]
+    cons = [
+        text.strip()
+        for text in ProsConsFact.objects.filter(symbol=company, is_pro=False).values_list("text", flat=True)
+        if _is_meaningful_note(text)
+    ]
     documents = [
         {
             "year": document.year.year_label,
@@ -120,6 +137,98 @@ def _comparison_company_slice(company: dict) -> dict:
     }
 
 
+def _generated_investor_notes(company: dict) -> tuple[list[str], list[str]]:
+    pros = []
+    cons = []
+    symbol = company["symbol"]
+    sector = company["sector"]
+    health_score = company.get("health_score", 0.0)
+    revenue = company.get("revenue", 0.0)
+    opm = company.get("opm", 0.0)
+    roe = company.get("roe", 0.0)
+    debt_to_equity = company.get("debt_to_equity", 0.0)
+    sales_cagr_3y = company.get("sales_cagr_3y", 0.0)
+    dividend_payout = company.get("dividend_payout", 0.0)
+    interest_coverage = company.get("interest_coverage", 0.0)
+    cash_conversion = company.get("cash_conversion", 0.0)
+    documents = company.get("documents", [])
+
+    if revenue > 0:
+        pros.append(f"{symbol} has a reported revenue base of Rs {round(revenue):,} Cr, giving the analysis a real operating scale to compare.")
+    if opm >= 15:
+        pros.append(f"Operating margin of {_format_metric(opm, '%')} shows a meaningful profit buffer before interest and tax.")
+    elif opm > 0:
+        cons.append(f"Operating margin of {_format_metric(opm, '%')} is modest, so margin stability should be checked against sector peers.")
+
+    if roe >= 15:
+        pros.append(f"ROE of {_format_metric(roe, '%')} indicates efficient use of shareholder capital.")
+    elif roe > 0:
+        cons.append(f"ROE of {_format_metric(roe, '%')} needs monitoring because returns are not yet clearly strong.")
+
+    if debt_to_equity <= 0.75:
+        pros.append(f"Debt-to-equity of {_format_ratio(debt_to_equity)} looks manageable for a non-lender balance sheet.")
+    elif debt_to_equity > 1.5:
+        cons.append(f"Debt-to-equity of {_format_ratio(debt_to_equity)} is elevated, so interest cost and refinancing risk matter.")
+    else:
+        cons.append(f"Debt-to-equity of {_format_ratio(debt_to_equity)} should be compared carefully within the {sector} sector.")
+
+    if sales_cagr_3y >= 10:
+        pros.append(f"3Y sales CAGR of {_format_metric(sales_cagr_3y, '%')} points to healthy growth momentum.")
+    elif sales_cagr_3y > 0:
+        cons.append(f"3Y sales CAGR of {_format_metric(sales_cagr_3y, '%')} is positive but not fast, so growth quality matters.")
+    else:
+        cons.append("Sales growth history is weak or unavailable, so the latest annual reports should be checked for demand drivers.")
+
+    if cash_conversion >= 1:
+        pros.append(f"Cash conversion of {_format_ratio(cash_conversion)} suggests reported profits are supported by operating cash flow.")
+    elif cash_conversion > 0:
+        cons.append(f"Cash conversion of {_format_ratio(cash_conversion)} is below ideal levels, so profit quality deserves a closer look.")
+    else:
+        cons.append("Cash conversion is unavailable or weak, so cash-flow statements need extra attention.")
+
+    if interest_coverage >= 4:
+        pros.append(f"Interest coverage of {_format_ratio(interest_coverage)} gives a cushion against financing costs.")
+    elif interest_coverage > 0:
+        cons.append(f"Interest coverage of {_format_ratio(interest_coverage)} leaves limited room if borrowing costs rise.")
+
+    if documents:
+        pros.append(f"{len(documents)} annual report links are available for source-level verification.")
+    else:
+        cons.append("Annual report links are missing, so source verification is limited.")
+
+    if health_score < 70:
+        health_note = f"Health score of {_format_metric(health_score)} is below the strong band, so the factor breakdown should be reviewed before drawing conclusions."
+    elif health_score < 85:
+        health_note = f"Health score of {_format_metric(health_score)} is solid but not excellent, so weaker factors still need review."
+    else:
+        health_note = f"Health score of {_format_metric(health_score)} is strong, but it should still be verified against valuation, filings, and sector context."
+    cons.insert(0, health_note)
+    if dividend_payout > 80:
+        cons.append(f"Dividend payout of {_format_metric(dividend_payout, '%')} is high and may be hard to sustain without earnings growth.")
+    elif dividend_payout == 0:
+        cons.append("Dividend payout is unavailable or zero, so income-focused investors may need additional checks.")
+
+    fallback_pros = [
+        f"{symbol} has enough warehouse data for a first-pass financial review.",
+        f"The company can be compared with other {sector} names using consistent warehouse metrics.",
+        "The score model gives a structured starting point across profitability, growth, leverage, cash flow, dividend, and trend factors.",
+    ]
+    fallback_cons = [
+        "Generated notes are based on structured financial metrics and should be verified against filings.",
+        "Qualitative business risks may not be fully captured by the current warehouse data.",
+        "Sector context is important before treating any single metric as positive or negative.",
+    ]
+
+    return (pros + fallback_pros)[:4], (cons + fallback_cons)[:4]
+
+
+def _ensure_investor_notes(company: dict) -> dict:
+    generated_pros, generated_cons = _generated_investor_notes(company)
+    company["pros"] = (company.get("pros", []) + [item for item in generated_pros if item not in company.get("pros", [])])[:4]
+    company["cons"] = (company.get("cons", []) + [item for item in generated_cons if item not in company.get("cons", [])])[:4]
+    return company
+
+
 def _warehouse_companies_exist() -> bool:
     try:
         return Company.objects.exists()
@@ -130,7 +239,7 @@ def _warehouse_companies_exist() -> bool:
 def list_companies(sector: str | None = None) -> list[dict]:
     if _warehouse_companies_exist():
         all_companies = [_serialize_warehouse_company(company) for company in _warehouse_queryset().order_by("company_name")]
-        scored_companies = attach_scores(all_companies)
+        scored_companies = [_ensure_investor_notes(company) for company in attach_scores(all_companies)]
         if sector and sector != "All":
             return [company for company in scored_companies if company["sector"] == sector]
         return scored_companies
