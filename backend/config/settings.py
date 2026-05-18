@@ -48,6 +48,10 @@ SECRET_KEY = env_value("DJANGO_SECRET_KEY", "dev-only-secret-key")
 DEBUG = env_value("DJANGO_DEBUG", "True").lower() == "true"
 ALLOWED_HOSTS = allowed_hosts()
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
+CORS_ALLOWED_ORIGIN_REGEXES = env_list(
+    "CORS_ALLOWED_ORIGIN_REGEXES",
+    r"^https://nifty100dashboards(?:-[a-z0-9-]+)?-sujaicodes-projects\.vercel\.app$",
+)
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
 
 INSTALLED_APPS = [

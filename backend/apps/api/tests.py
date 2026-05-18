@@ -1,6 +1,8 @@
+import re
 from decimal import Decimal
 from unittest.mock import patch
 
+from django.conf import settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -26,6 +28,13 @@ class ApiSmokeTests(APITestCase):
         response = self.client.get(reverse("api-health"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], "ok")
+
+    def test_vercel_preview_origin_is_allowed_for_api_reads(self):
+        preview_origin = "https://nifty100dashboards-axs5qznwz-sujaicodes-projects.vercel.app"
+
+        self.assertTrue(
+            any(re.match(pattern, preview_origin) for pattern in settings.CORS_ALLOWED_ORIGIN_REGEXES)
+        )
 
     def test_bootstrap_endpoint_returns_company_list(self):
         response = self.client.get(reverse("api-bootstrap"))
