@@ -1,5 +1,6 @@
 from collections import defaultdict
 from decimal import Decimal
+from math import isfinite
 
 from django.db import DatabaseError
 
@@ -23,8 +24,12 @@ def _to_float(value) -> float:
     if value is None:
         return 0.0
     if isinstance(value, Decimal):
-        return float(value)
-    return float(value)
+        return float(value) if value.is_finite() else 0.0
+    try:
+        converted = float(value)
+    except (TypeError, ValueError):
+        return 0.0
+    return converted if isfinite(converted) else 0.0
 
 
 def _format_metric(value: float, suffix: str = "") -> str:

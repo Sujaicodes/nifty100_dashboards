@@ -18,6 +18,7 @@ from apps.warehouse.models import (
     Sector,
     YearDimension,
 )
+from apps.api.services import _to_float
 
 
 class ApiSmokeTests(APITestCase):
@@ -31,6 +32,11 @@ class ApiSmokeTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("companies", response.data)
         self.assertGreater(len(response.data["companies"]), 0)
+
+    def test_non_finite_metrics_are_json_safe(self):
+        self.assertEqual(_to_float(Decimal("NaN")), 0.0)
+        self.assertEqual(_to_float(Decimal("Infinity")), 0.0)
+        self.assertEqual(_to_float(float("nan")), 0.0)
 
     def test_company_list_prefers_warehouse_records_when_present(self):
         sector = Sector.objects.create(sector_code="IT", sector_name="IT")
