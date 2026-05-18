@@ -1,0 +1,33 @@
+<svg width="1200" height="360" viewBox="0 0 1200 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="360" fill="#111111"/>
+  <rect x="42" y="42" width="1116" height="276" fill="#F7F7F2" stroke="#FFFFFF" stroke-width="4"/>
+  <text x="72" y="92" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="900" letter-spacing="4" fill="#111111">REAL DATA FLOW</text>
+  <g font-family="Arial, Helvetica, sans-serif" font-weight="900">
+    <rect x="72" y="132" width="180" height="92" fill="#F3C61C" stroke="#111111" stroke-width="4"/>
+    <text x="105" y="168" font-size="22" fill="#111111">EXCEL</text>
+    <text x="104" y="196" font-size="16" fill="#111111">7 WORKBOOKS</text>
+    <rect x="304" y="132" width="180" height="92" fill="#1748C8" stroke="#111111" stroke-width="4"/>
+    <text x="332" y="168" font-size="22" fill="#FFFFFF">POSTGRES</text>
+    <text x="334" y="196" font-size="16" fill="#FFFFFF">STAR SCHEMA</text>
+    <rect x="536" y="132" width="180" height="92" fill="#FFFFFF" stroke="#111111" stroke-width="4"/>
+    <text x="578" y="168" font-size="22" fill="#111111">DJANGO</text>
+    <text x="576" y="196" font-size="16" fill="#111111">REST API</text>
+    <rect x="768" y="132" width="180" height="92" fill="#E02020" stroke="#111111" stroke-width="4"/>
+    <text x="805" y="168" font-size="22" fill="#FFFFFF">FRONTEND</text>
+    <text x="804" y="196" font-size="16" fill="#FFFFFF">HASH ROUTES</text>
+    <rect x="1000" y="132" width="118" height="92" fill="#111111" stroke="#111111" stroke-width="4"/>
+    <text x="1029" y="168" font-size="22" fill="#FFFFFF">USER</text>
+    <text x="1021" y="196" font-size="16" fill="#FFFFFF">INSIGHTS</text>
+  </g>
+  <g stroke="#111111" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M260 178H294"/>
+    <path d="M282 166L294 178L282 190"/>
+    <path d="M492 178H526"/>
+    <path d="M514 166L526 178L514 190"/>
+    <path d="M724 178H758"/>
+    <path d="M746 166L758 178L746 190"/>
+    <path d="M956 178H990"/>
+    <path d="M978 166L990 178L978 190"/>
+  </g>
+  <text x="72" y="276" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" fill="#111111">The app proves the full pipeline: raw workbook exports become normalized warehouse facts, API payloads, charts, company pages, and annual report links.</text>
+</svg>

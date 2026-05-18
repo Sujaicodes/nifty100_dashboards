@@ -1,0 +1,29 @@
+<svg width="1200" height="520" viewBox="0 0 1200 520" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="520" fill="#F7F7F2"/>
+  <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+    <circle cx="2" cy="2" r="1.5" fill="#D7D9DF"/>
+  </pattern>
+  <rect width="1200" height="520" fill="url(#dots)"/>
+  <rect x="48" y="48" width="1104" height="424" fill="#FFFFFF" stroke="#111111" stroke-width="5"/>
+  <rect x="62" y="62" width="1076" height="74" fill="#F3C61C" stroke="#111111" stroke-width="4"/>
+  <circle cx="100" cy="99" r="15" fill="#E02020" stroke="#111111" stroke-width="4"/>
+  <rect x="126" y="84" width="30" height="30" fill="#1748C8" stroke="#111111" stroke-width="4"/>
+  <path d="M180 82L199 116H161L180 82Z" fill="#F3C61C" stroke="#111111" stroke-width="4"/>
+  <text x="232" y="91" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="900" letter-spacing="5" fill="#111111">NIFTY 100 INTELLIGENCE SYSTEM</text>
+  <text x="232" y="124" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="900" fill="#111111">BLUESTOCK IQ</text>
+  <rect x="880" y="78" width="226" height="42" fill="#1748C8" stroke="#111111" stroke-width="4"/>
+  <text x="910" y="106" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="900" letter-spacing="2" fill="#FFFFFF">WAREHOUSE LIVE</text>
+  <text x="86" y="204" font-family="Arial, Helvetica, sans-serif" font-size="76" font-weight="900" fill="#111111">UNDERSTAND</text>
+  <text x="86" y="280" font-family="Arial, Helvetica, sans-serif" font-size="76" font-weight="900" fill="#111111">BIG INDIAN</text>
+  <text x="86" y="356" font-family="Arial, Helvetica, sans-serif" font-size="76" font-weight="900" fill="#111111">COMPANIES</text>
+  <text x="86" y="418" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#111111">Excel to PostgreSQL to Django API to Vercel frontend.</text>
+  <rect x="738" y="174" width="334" height="214" fill="#1748C8" stroke="#111111" stroke-width="5"/>
+  <text x="768" y="218" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="900" letter-spacing="2" fill="#FFFFFF">MARKET PULSE</text>
+  <text x="768" y="252" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF">101 warehouse companies</text>
+  <text x="768" y="304" font-family="Arial, Helvetica, sans-serif" font-size="74" font-weight="900" fill="#FFFFFF">1,202</text>
+  <rect x="768" y="322" width="154" height="34" fill="#F3C61C" stroke="#111111" stroke-width="3"/>
+  <text x="784" y="345" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="900" fill="#111111">REPORT LINKS</text>
+  <path d="M792 382C826 336 859 368 886 334C912 302 947 325 980 275C1017 219 1048 242 1070 202" stroke="#F3C61C" stroke-width="8" stroke-linecap="round"/>
+  <rect x="760" y="400" width="282" height="24" fill="#FFFFFF" stroke="#111111" stroke-width="3"/>
+  <rect x="760" y="400" width="210" height="24" fill="#F3C61C" stroke="#111111" stroke-width="3"/>
+</svg>
