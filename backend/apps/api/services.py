@@ -238,11 +238,14 @@ def _warehouse_companies_exist() -> bool:
 
 def list_companies(sector: str | None = None) -> list[dict]:
     if _warehouse_companies_exist():
-        all_companies = [_serialize_warehouse_company(company) for company in _warehouse_queryset().order_by("company_name")]
-        scored_companies = [_ensure_investor_notes(company) for company in attach_scores(all_companies)]
-        if sector and sector != "All":
-            return [company for company in scored_companies if company["sector"] == sector]
-        return scored_companies
+        try:
+            all_companies = [_serialize_warehouse_company(company) for company in _warehouse_queryset().order_by("company_name")]
+            scored_companies = [_ensure_investor_notes(company) for company in attach_scores(all_companies)]
+            if sector and sector != "All":
+                return [company for company in scored_companies if company["sector"] == sector]
+            return scored_companies
+        except DatabaseError:
+            pass
 
     if sector and sector != "All":
         return attach_scores([company for company in COMPANIES if company["sector"] == sector])
@@ -465,15 +468,21 @@ def growth_analytics(symbol: str) -> dict | None:
 
 def available_years() -> list[int]:
     if _warehouse_companies_exist():
-        years = YearDimension.objects.values_list("fiscal_year", flat=True).distinct()
-        return sorted((year for year in years if year is not None), reverse=True)
+        try:
+            years = YearDimension.objects.values_list("fiscal_year", flat=True).distinct()
+            return sorted((year for year in years if year is not None), reverse=True)
+        except DatabaseError:
+            pass
     years = {entry["year"] for company in COMPANIES for entry in company["years"]}
     return sorted(years, reverse=True)
 
 
 def sectors() -> list[str]:
     if _warehouse_companies_exist():
-        return list(Sector.objects.order_by("sector_name").values_list("sector_name", flat=True))
+        try:
+            return list(Sector.objects.order_by("sector_name").values_list("sector_name", flat=True))
+        except DatabaseError:
+            pass
     return sorted({company["sector"] for company in COMPANIES})
 
 
