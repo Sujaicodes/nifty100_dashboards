@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import dj_database_url
 
@@ -17,6 +18,20 @@ def env_value(name: str, default: str = "") -> str:
 
 def env_list(name: str, default: str = "") -> list[str]:
     return [item.strip().rstrip("/") for item in env_value(name, default).split(",") if item.strip()]
+
+
+def database_url_value() -> str:
+    value = env_value("DATABASE_URL")
+    if not value:
+        return value
+
+    parsed = urlsplit(value)
+    query = [
+        (key, item)
+        for key, item in parse_qsl(parsed.query, keep_blank_values=True)
+        if key.lower() != "pgbouncer"
+    ]
+    return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, urlencode(query), parsed.fragment))
 
 
 SECRET_KEY = env_value("DJANGO_SECRET_KEY", "dev-only-secret-key")
@@ -83,7 +98,7 @@ DATABASES = {
     }
 }
 
-DATABASE_URL = env_value("DATABASE_URL")
+DATABASE_URL = database_url_value()
 if DATABASE_URL:
     DATABASES["default"] = dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=not DEBUG)
     if not DATABASES["default"].get("NAME"):
