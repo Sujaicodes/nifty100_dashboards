@@ -244,7 +244,8 @@ def list_companies(sector: str | None = None) -> list[dict]:
             if sector and sector != "All":
                 return [company for company in scored_companies if company["sector"] == sector]
             return scored_companies
-        except DatabaseError:
+        except Exception as exc:
+            print(f"Warehouse company serialization failed: {type(exc).__name__}: {exc}", flush=True)
             pass
 
     if sector and sector != "All":
