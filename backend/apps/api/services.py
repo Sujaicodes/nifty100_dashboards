@@ -53,78 +53,117 @@ def _latest_run_timestamp():
     return MlScoreFact.objects.order_by("-computed_at").values_list("computed_at", flat=True).first()
 
 
-def _serialize_warehouse_company(company: Company) -> dict:
-    latest_score = MlScoreFact.objects.filter(symbol=company).select_related("health_label").order_by("-computed_at").first()
-    latest_profit = ProfitLossFact.objects.filter(symbol=company).select_related("year").order_by("-year__sort_order").first()
-    latest_balance = BalanceSheetFact.objects.filter(symbol=company).select_related("year").order_by("-year__sort_order").first()
-    latest_cash = CashFlowFact.objects.filter(symbol=company).select_related("year").order_by("-year__sort_order").first()
-    analysis_3y = AnalysisFact.objects.filter(symbol=company, period_label="3Y").first()
+def _group_by_symbol(facts) -> dict[str, list]:
+    grouped: dict[str, list] = defaultdict(list)
+    for fact in facts:
+        grouped[fact.symbol_id].append(fact)
+    return grouped
 
-    balance_by_year = {
-        fact.year_id: fact
-        for fact in BalanceSheetFact.objects.filter(symbol=company).select_related("year")
+
+def _latest_by_symbol(facts) -> dict[str, object]:
+    latest = {}
+    for fact in facts:
+        latest.setdefault(fact.symbol_id, fact)
+    return latest
+
+
+def _serialize_warehouse_company(company: Company, related: dict | None = None) -> dict:
+    return _serialize_warehouse_companies([company], related=related)[0]
+
+
+def _serialize_warehouse_companies(companies: list[Company], related: dict | None = None) -> list[dict]:
+    symbols = [company.symbol for company in companies]
+    related = related or {
+        "latest_scores": _latest_by_symbol(
+            MlScoreFact.objects.filter(symbol_id__in=symbols).select_related("health_label").order_by("symbol_id", "-computed_at")
+        ),
+        "profits": _group_by_symbol(
+            ProfitLossFact.objects.filter(symbol_id__in=symbols).select_related("year").order_by("symbol_id", "year__sort_order")
+        ),
+        "balances": _group_by_symbol(
+            BalanceSheetFact.objects.filter(symbol_id__in=symbols).select_related("year").order_by("symbol_id", "year__sort_order")
+        ),
+        "cash_flows": _group_by_symbol(
+            CashFlowFact.objects.filter(symbol_id__in=symbols).select_related("year").order_by("symbol_id", "year__sort_order")
+        ),
+        "analysis_3y": {
+            fact.symbol_id: fact
+            for fact in AnalysisFact.objects.filter(symbol_id__in=symbols, period_label="3Y")
+        },
+        "pros_cons": _group_by_symbol(ProsConsFact.objects.filter(symbol_id__in=symbols).order_by("symbol_id", "id")),
+        "documents": _group_by_symbol(
+            DocumentFact.objects.filter(symbol_id__in=symbols).select_related("year").order_by("symbol_id", "-year__sort_order")
+        ),
     }
-    yearly_profit_facts = ProfitLossFact.objects.filter(symbol=company).select_related("year").order_by("year__sort_order")
-    yearly_rows = []
-    for fact in yearly_profit_facts:
-        matching_balance = balance_by_year.get(fact.year_id)
-        yearly_rows.append(
+
+    payloads = []
+    for company in companies:
+        latest_score = related["latest_scores"].get(company.symbol)
+        profit_facts = related["profits"].get(company.symbol, [])
+        balance_facts = related["balances"].get(company.symbol, [])
+        cash_facts = related["cash_flows"].get(company.symbol, [])
+        analysis_3y = related["analysis_3y"].get(company.symbol)
+        latest_profit = profit_facts[-1] if profit_facts else None
+        latest_balance = balance_facts[-1] if balance_facts else None
+        latest_cash = cash_facts[-1] if cash_facts else None
+        balance_by_year = {fact.year_id: fact for fact in balance_facts}
+
+        yearly_rows = []
+        for fact in profit_facts:
+            matching_balance = balance_by_year.get(fact.year_id)
+            yearly_rows.append(
+                {
+                    "year": fact.year.fiscal_year,
+                    "sales": _to_float(fact.sales),
+                    "profit": _to_float(fact.net_profit),
+                    "opm": _to_float(fact.opm_pct),
+                    "debt": _to_float(matching_balance.debt_to_equity) if matching_balance else 0.0,
+                    "eps": _to_float(fact.eps),
+                    "dividend": _to_float(fact.dividend_payout_pct),
+                }
+            )
+
+        notes = related["pros_cons"].get(company.symbol, [])
+        pros = [note.text.strip() for note in notes if note.is_pro and _is_meaningful_note(note.text)]
+        cons = [note.text.strip() for note in notes if not note.is_pro and _is_meaningful_note(note.text)]
+        documents = [
             {
-                "year": fact.year.fiscal_year,
-                "sales": _to_float(fact.sales),
-                "profit": _to_float(fact.net_profit),
-                "opm": _to_float(fact.opm_pct),
-                "debt": _to_float(matching_balance.debt_to_equity) if matching_balance else 0.0,
-                "eps": _to_float(fact.eps),
-                "dividend": _to_float(fact.dividend_payout_pct),
+                "year": document.year.year_label,
+                "fiscal_year": document.year.fiscal_year,
+                "annual_report": document.annual_report,
+                "document_type": document.document_type,
+            }
+            for document in related["documents"].get(company.symbol, [])
+        ]
+
+        payloads.append(
+            {
+                "symbol": company.symbol,
+                "company_name": company.company_name,
+                "sector": company.sector.sector_name,
+                "company_logo": company.company_logo,
+                "website": company.website,
+                "nse_url": company.nse_url,
+                "bse_url": company.bse_url,
+                "about_company": company.about_company,
+                "health_score": _to_float(latest_score.overall_score) if latest_score else 0.0,
+                "health_label": latest_score.health_label.label_name if latest_score else "AVERAGE",
+                "revenue": _to_float(latest_profit.sales) if latest_profit else 0.0,
+                "roe": _to_float(analysis_3y.roe_pct) if analysis_3y else 0.0,
+                "opm": _to_float(latest_profit.opm_pct) if latest_profit else 0.0,
+                "debt_to_equity": _to_float(latest_balance.debt_to_equity) if latest_balance else 0.0,
+                "sales_cagr_3y": _to_float(analysis_3y.compounded_sales_growth_pct) if analysis_3y else 0.0,
+                "net_profit": _to_float(latest_profit.net_profit) if latest_profit else 0.0,
+                "dividend_payout": _to_float(latest_profit.dividend_payout_pct) if latest_profit else 0.0,
+                "interest_coverage": _to_float(latest_profit.interest_coverage) if latest_profit else 0.0,
+                "cash_conversion": _to_float(latest_cash.cash_conversion_ratio) if latest_cash else 0.0,
+                "years": yearly_rows,
+                "pros": pros,
+                "cons": cons,
+                "documents": documents,
             }
         )
-
-    pros = [
-        text.strip()
-        for text in ProsConsFact.objects.filter(symbol=company, is_pro=True).values_list("text", flat=True)
-        if _is_meaningful_note(text)
-    ]
-    cons = [
-        text.strip()
-        for text in ProsConsFact.objects.filter(symbol=company, is_pro=False).values_list("text", flat=True)
-        if _is_meaningful_note(text)
-    ]
-    documents = [
-        {
-            "year": document.year.year_label,
-            "fiscal_year": document.year.fiscal_year,
-            "annual_report": document.annual_report,
-            "document_type": document.document_type,
-        }
-        for document in DocumentFact.objects.filter(symbol=company).select_related("year").order_by("-year__sort_order")
-    ]
-
-    return {
-        "symbol": company.symbol,
-        "company_name": company.company_name,
-        "sector": company.sector.sector_name,
-        "company_logo": company.company_logo,
-        "website": company.website,
-        "nse_url": company.nse_url,
-        "bse_url": company.bse_url,
-        "about_company": company.about_company,
-        "health_score": _to_float(latest_score.overall_score) if latest_score else 0.0,
-        "health_label": latest_score.health_label.label_name if latest_score else "AVERAGE",
-        "revenue": _to_float(latest_profit.sales) if latest_profit else 0.0,
-        "roe": _to_float(analysis_3y.roe_pct) if analysis_3y else 0.0,
-        "opm": _to_float(latest_profit.opm_pct) if latest_profit else 0.0,
-        "debt_to_equity": _to_float(latest_balance.debt_to_equity) if latest_balance else 0.0,
-        "sales_cagr_3y": _to_float(analysis_3y.compounded_sales_growth_pct) if analysis_3y else 0.0,
-        "net_profit": _to_float(latest_profit.net_profit) if latest_profit else 0.0,
-        "dividend_payout": _to_float(latest_profit.dividend_payout_pct) if latest_profit else 0.0,
-        "interest_coverage": _to_float(latest_profit.interest_coverage) if latest_profit else 0.0,
-        "cash_conversion": _to_float(latest_cash.cash_conversion_ratio) if latest_cash else 0.0,
-        "years": yearly_rows,
-        "pros": pros,
-        "cons": cons,
-        "documents": documents,
-    }
+    return payloads
 
 
 def _comparison_company_slice(company: dict) -> dict:
@@ -244,7 +283,8 @@ def _warehouse_companies_exist() -> bool:
 def list_companies(sector: str | None = None) -> list[dict]:
     if _warehouse_companies_exist():
         try:
-            all_companies = [_serialize_warehouse_company(company) for company in _warehouse_queryset().order_by("company_name")]
+            companies = list(_warehouse_queryset().order_by("company_name"))
+            all_companies = _serialize_warehouse_companies(companies)
             scored_companies = [_ensure_investor_notes(company) for company in attach_scores(all_companies)]
             if sector and sector != "All":
                 return [company for company in scored_companies if company["sector"] == sector]
